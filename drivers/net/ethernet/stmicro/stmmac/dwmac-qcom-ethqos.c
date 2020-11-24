@@ -291,7 +291,15 @@ static int ethqos_handle_prv_ioctl(struct net_device *dev,
 				   sizeof(struct pps_cfg)))
 			return -EFAULT;
 
-		ret = ppsout_config(pdata, &eth_pps_cfg);
+		if (eth_pps_cfg.ppsout_ch < 0 ||
+		    eth_pps_cfg.ppsout_ch >= pdata->dma_cap.pps_out_num)
+			ret = -EOPNOTSUPP;
+		else if ((eth_pps_cfg.ppsout_align == 1) &&
+			 ((eth_pps_cfg.ppsout_ch != DWC_ETH_QOS_PPS_CH_0) &&
+			 (eth_pps_cfg.ppsout_ch != DWC_ETH_QOS_PPS_CH_3)))
+			ret = -EOPNOTSUPP;
+		else
+			ret = ppsout_config(pdata, &eth_pps_cfg);
 		break;
 	case ETHQOS_AVB_ALGORITHM:
 		dwmac_qcom_program_avb_algorithm(pdata, &req);
