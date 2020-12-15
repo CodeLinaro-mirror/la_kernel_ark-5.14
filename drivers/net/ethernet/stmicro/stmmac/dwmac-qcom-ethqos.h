@@ -52,6 +52,8 @@ struct qcom_ethqos {
 	struct regulator *reg_rgmii;
 	struct regulator *reg_emac_phy;
 	struct regulator *reg_rgmii_io_pads;
+
+	struct dentry *debugfs_dir;
 };
 
 int ethqos_init_reqgulators(struct qcom_ethqos *ethqos);
