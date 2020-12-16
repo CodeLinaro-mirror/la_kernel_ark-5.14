@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2018-19, Linaro Limited
+// Copyright (c) 2021, The Linux Foundation. All rights reserved.
+// Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
 
 #include <linux/module.h>
 #include <linux/of.h>
@@ -239,7 +241,7 @@ static void dwmac_qcom_program_avb_algorithm(struct stmmac_priv *priv,
 				  l_avb_struct.qinx);
 }
 
-unsigned int dwmac_qcom_get_plat_tx_coal_frames(struct sk_buff *skb)
+static unsigned int dwmac_qcom_get_plat_tx_coal_frames(struct sk_buff *skb)
 {
 	bool is_udp;
 	unsigned int eth_type;
@@ -1169,6 +1171,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	plat_dat->bsp_priv = ethqos;
 	plat_dat->fix_mac_speed = ethqos_fix_mac_speed;
 	plat_dat->tx_select_queue = dwmac_qcom_select_queue;
+	plat_dat->get_plat_tx_coal_frames = dwmac_qcom_get_plat_tx_coal_frames;
 	plat_dat->has_gmac4 = 1;
 	plat_dat->pmt = 1;
 	plat_dat->tso_en = of_property_read_bool(np, "snps,tso");
