@@ -212,6 +212,4 @@ struct dwmac_qcom_avb_algorithm {
 	struct dwmac_qcom_avb_algorithm_params speed1000params;
 	enum dwmac_qcom_queue_operating_mode op_mode;
 };
-
-unsigned int dwmac_qcom_get_plat_tx_coal_frames(struct sk_buff *skb);
 #endif
