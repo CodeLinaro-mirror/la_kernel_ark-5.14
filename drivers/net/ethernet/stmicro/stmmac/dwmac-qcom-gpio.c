@@ -16,6 +16,44 @@
 #define EMAC_VREG_EMAC_PHY_NAME "vreg_emac_phy"
 #define EMAC_VREG_RGMII_IO_PADS_NAME "vreg_rgmii_io_pads"
 
+static int setup_gpio_input_common
+	(struct device *dev, const char *name, int *gpio)
+{
+	int ret = 0;
+
+	if (of_find_property(dev->of_node, name, NULL)) {
+		*gpio = ret = of_get_named_gpio(dev->of_node, name, 0);
+		if (ret >= 0) {
+			ret = gpio_request(*gpio, name);
+			if (ret) {
+				ETHQOSERR("Can't get GPIO %s, ret = %d\n",
+					  name, *gpio);
+				*gpio = -1;
+				return ret;
+			}
+
+			ret = gpio_direction_input(*gpio);
+			if (ret) {
+				ETHQOSERR("failed GPIO %s direction ret=%d\n",
+					  name, ret);
+				return ret;
+			}
+		} else {
+			if (ret == -EPROBE_DEFER)
+				ETHQOSERR("get EMAC_GPIO probe defer\n");
+			else
+				ETHQOSERR("can't get gpio %s ret %d\n", name,
+					  ret);
+			return ret;
+		}
+	} else {
+		ETHQOSERR("can't find gpio %s\n", name);
+		ret = -EINVAL;
+	}
+
+	return ret;
+}
+
 int ethqos_init_reqgulators(struct qcom_ethqos *ethqos)
 {
 	int ret = 0;
@@ -125,8 +163,7 @@ static int ethqos_init_pinctrl(struct device *dev)
 
 	num_names = of_property_count_strings(dev->of_node, "pinctrl-names");
 	if (num_names < 0) {
-		dev_err(dev, "Cannot parse pinctrl-names: %d\n",
-			num_names);
+		ETHQOSERR("Cannot parse pinctrl-names: %d\n", num_names);
 		devm_pinctrl_put(pinctrl);
 		return num_names;
 	}
@@ -164,9 +201,19 @@ err_pinctrl:
 	return ret;
 }
 
+void ethqos_free_gpios(struct qcom_ethqos *ethqos)
+{
+	if (gpio_is_valid(ethqos->gpio_phy_intr_redirect))
+		gpio_free(ethqos->gpio_phy_intr_redirect);
+	ethqos->gpio_phy_intr_redirect = -1;
+}
+EXPORT_SYMBOL(ethqos_free_gpios);
+
 int ethqos_init_gpio(struct qcom_ethqos *ethqos)
 {
 	int ret = 0;
+
+	ethqos->gpio_phy_intr_redirect = -1;
 
 	ret = ethqos_init_pinctrl(&ethqos->pdev->dev);
 	if (ret) {
@@ -174,6 +221,19 @@ int ethqos_init_gpio(struct qcom_ethqos *ethqos)
 		return ret;
 	}
 
+	ret = setup_gpio_input_common(&ethqos->pdev->dev,
+				      "qcom,phy-intr-redirect",
+				      &ethqos->gpio_phy_intr_redirect);
+	if (ret) {
+		ETHQOSERR("Failed to setup <%s> gpio\n",
+			  "qcom,phy-intr-redirect");
+		goto gpio_error;
+	}
+
+	return ret;
+
+gpio_error:
+	ethqos_free_gpios(ethqos);
 	return ret;
 }
 EXPORT_SYMBOL(ethqos_init_gpio);
