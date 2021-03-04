@@ -683,6 +683,12 @@ static void stmmac_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 {
 	struct stmmac_priv *priv = netdev_priv(dev);
 
+	if (!priv->phydev) {
+		pr_err("%s: %s: PHY is not registered\n",
+		       __func__, dev->name);
+		return;
+	}
+
 	if (!priv->plat->mac2mac_en && !priv->plat->pmt)
 		return phylink_ethtool_get_wol(priv->phylink, wol);
 
@@ -700,6 +706,12 @@ static int stmmac_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 {
 	struct stmmac_priv *priv = netdev_priv(dev);
 	u32 support = WAKE_MAGIC | WAKE_UCAST;
+
+	if (!priv->phydev) {
+		pr_err("%s: %s: PHY is not registered\n",
+		       __func__, dev->name);
+		return -ENODEV;
+	}
 
 	if (!device_can_wakeup(priv->device))
 		return -EOPNOTSUPP;

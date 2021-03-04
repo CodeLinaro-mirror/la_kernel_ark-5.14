@@ -402,8 +402,12 @@ static inline void stmmac_hw_fix_mac_speed(struct stmmac_priv *priv)
 			return;
 		}
 
-		priv->plat->fix_mac_speed(priv->plat->bsp_priv,
-					  SPEED_10);
+		if (priv->phydev->link)
+			priv->plat->fix_mac_speed(priv->plat->bsp_priv,
+						  priv->speed);
+		else
+			priv->plat->fix_mac_speed(priv->plat->bsp_priv,
+						  SPEED_10);
 	}
 }
 
@@ -1212,15 +1216,32 @@ static int stmmac_init_phy(struct net_device *dev)
 	 */
 	if (!node || ret) {
 		int addr = priv->plat->phy_addr;
-		struct phy_device *phydev;
 
-		phydev = mdiobus_get_phy(priv->mii, addr);
-		if (!phydev) {
+		priv->phydev = mdiobus_get_phy(priv->mii, addr);
+		if (!priv->phydev) {
 			netdev_err(priv->dev, "no phy at addr %d\n", addr);
 			return -ENODEV;
 		}
 
-		ret = phylink_connect_phy(priv->phylink, phydev);
+		if (priv->plat->phy_intr_en_extn_stm &&
+		    priv->plat->phy_intr_en) {
+			priv->phydev->irq = PHY_MAC_INTERRUPT;
+			priv->phydev->interrupts =  PHY_INTERRUPT_ENABLED;
+		}
+		ret = phylink_connect_phy(priv->phylink, priv->phydev);
+
+		if (priv->plat->phy_intr_en_extn_stm &&
+		    priv->plat->phy_intr_en) {
+			if (priv->phydev->drv &&
+			    priv->phydev->drv->config_intr &&
+			    !priv->phydev->drv->config_intr(priv->phydev))
+				netdev_info(priv->dev,
+					    "%s config_phy_intr successful\n",
+					    __func__);
+		} else {
+			netdev_info(priv->dev, "stmmac phy polling mode\n");
+			priv->phydev->irq = PHY_POLL;
+		}
 	}
 
 	if (!priv->plat->pmt) {

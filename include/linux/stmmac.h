@@ -281,10 +281,13 @@ struct plat_stmmacenet_data {
 	int msi_tx_base_vec;
 	bool use_phy_wol;
 
-	struct emac_emb_smmu_cb_ctx stmmac_emb_smmu_ctx;
 	int mac2mac_rgmii_speed;
 	bool mac2mac_en;
 	int mac2mac_link;
 	bool mac2mac_88Q5072;
+	struct emac_emb_smmu_cb_ctx stmmac_emb_smmu_ctx;
+	bool phy_intr_en_extn_stm;
+	bool phy_intr_en;
+	int (*phy_intr_enable)(void *priv);
 };
 #endif
