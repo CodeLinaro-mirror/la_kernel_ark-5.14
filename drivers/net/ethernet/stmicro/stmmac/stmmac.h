@@ -308,6 +308,9 @@ enum stmmac_state {
 	STMMAC_SERVICE_SCHED,
 };
 
+#define GET_MEM_PDEV_DEV (priv->plat->stmmac_emb_smmu_ctx.valid ? \
+		&priv->plat->stmmac_emb_smmu_ctx.smmu_pdev->dev : priv->device)
+
 int stmmac_mdio_unregister(struct net_device *ndev);
 int stmmac_mdio_register(struct net_device *ndev);
 int stmmac_mdio_reset(struct mii_bus *mii);
