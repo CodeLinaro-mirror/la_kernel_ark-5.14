@@ -20,6 +20,7 @@
 #include "stmmac.h"
 #include "stmmac_platform.h"
 #include "dwmac-qcom-ethqos.h"
+#include "stmmac_ptp.h"
 
 #define RGMII_IO_MACRO_DEBUG1		0x20
 #define EMAC_SYSTEM_LOW_POWER_DEBUG	0x28
@@ -104,8 +105,14 @@
 #define MARVEL_PHY_STATUS 0x11
 #define MARVEL_LINK_UP_STATUS BIT(10)
 
-struct emac_emb_smmu_cb_ctx emac_emb_smmu_ctx = {0};
-struct plat_stmmacenet_data *plat_dat;
+static struct emac_emb_smmu_cb_ctx emac_emb_smmu_ctx = {0};
+static struct plat_stmmacenet_data *plat_dat;
+static struct qcom_ethqos *pethqos;
+
+struct qcom_ethqos *get_pethqos(void)
+{
+	return pethqos;
+}
 
 static struct ethqos_emac_por emac_por[] = {
 	{ .offset = RGMII_IO_MACRO_CONFIG,	.value = 0x0 },
@@ -133,6 +140,28 @@ static void qcom_ethqos_read_iomacro_por_values(struct qcom_ethqos *ethqos)
 		ethqos->por[i].value =
 			readl_relaxed
 			(ethqos->rgmii_base + ethqos->por[i].offset);
+}
+
+static int ethqos_handle_prv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+{
+	struct stmmac_priv *pdata = netdev_priv(dev);
+	struct ifr_data_struct req;
+	struct pps_cfg eth_pps_cfg;
+	int ret = 0;
+
+	if (copy_from_user(&req, ifr->ifr_ifru.ifru_data,
+			   sizeof(struct ifr_data_struct)))
+		return -EFAULT;
+	if (copy_from_user(&eth_pps_cfg, (void __user *)req.ptr,
+			   sizeof(struct pps_cfg)))
+		return -EFAULT;
+
+	switch (req.cmd) {
+	case ETHQOS_CONFIG_PPSOUT_CMD:
+		ret = ppsout_config(pdata, &eth_pps_cfg);
+		break;
+	}
+	return ret;
 }
 
 static int rgmii_readl(struct qcom_ethqos *ethqos, unsigned int offset)
@@ -918,6 +947,22 @@ static void ethqos_cleanup_debugfs(struct qcom_ethqos *ethqos)
 	ETHQOSDBG("debugfs Deleted Successfully");
 }
 
+static void ethqos_pps_irq_config(struct qcom_ethqos *ethqos)
+{
+	ethqos->pps_class_a_irq =
+	platform_get_irq_byname(ethqos->pdev, "ptp_pps_irq_0");
+	if (ethqos->pps_class_a_irq < 0) {
+		if (ethqos->pps_class_a_irq != -EPROBE_DEFER)
+			ETHQOSERR("class_a_irq config info not found\n");
+	}
+	ethqos->pps_class_b_irq =
+	platform_get_irq_byname(ethqos->pdev, "ptp_pps_irq_1");
+	if (ethqos->pps_class_b_irq < 0) {
+		if (ethqos->pps_class_b_irq != -EPROBE_DEFER)
+			ETHQOSERR("class_b_irq config info not found\n");
+	}
+}
+
 static int qcom_ethqos_probe(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
@@ -980,6 +1025,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	plat_dat->has_gmac4 = 1;
 	plat_dat->pmt = 1;
 	plat_dat->tso_en = of_property_read_bool(np, "snps,tso");
+	plat_dat->handle_prv_ioctl = ethqos_handle_prv_ioctl;
 	plat_dat->phy_intr_enable = ethqos_phy_intr_enable;
 
 	/* Get rgmii interface speed for mac2c from device tree */
@@ -1041,6 +1087,21 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 
 	if (priv->plat->mac2mac_en)
 		priv->plat->mac2mac_link = 0;
+
+	if (ethqos->emac_ver == EMAC_HW_v3_0_0_RG) {
+		ethqos_pps_irq_config(ethqos);
+		create_pps_interrupt_device_node(&ethqos->avb_class_a_dev_t,
+						 &ethqos->avb_class_a_cdev,
+						 &ethqos->avb_class_a_class,
+						 AVB_CLASS_A_POLL_DEV_NODE);
+
+		create_pps_interrupt_device_node(&ethqos->avb_class_b_dev_t,
+						 &ethqos->avb_class_b_cdev,
+						 &ethqos->avb_class_b_class,
+						 AVB_CLASS_B_POLL_DEV_NODE);
+	}
+
+	pethqos = ethqos;
 
 	return ret;
 
