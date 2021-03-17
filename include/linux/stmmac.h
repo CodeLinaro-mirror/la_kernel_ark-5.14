@@ -289,6 +289,8 @@ struct plat_stmmacenet_data {
 	struct emac_emb_smmu_cb_ctx stmmac_emb_smmu_ctx;
 	bool phy_intr_en_extn_stm;
 	bool phy_intr_en;
+	int (*handle_prv_ioctl)(struct net_device *dev, struct ifreq *ifr,
+				int cmd);
 	int (*phy_intr_enable)(void *priv);
 };
 #endif
