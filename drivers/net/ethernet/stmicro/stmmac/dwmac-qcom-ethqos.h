@@ -45,6 +45,8 @@
 #define AVB_CLASS_A_CHANNEL_NUM 2
 #define AVB_CLASS_B_CHANNEL_NUM 3
 
+#define PPS_19_2_FREQ 19200000
+
 static inline u32 PPSCMDX(u32 x, u32 val)
 {
 	return (GENMASK(PPS_MINIDX(x) + 3, PPS_MINIDX(x)) &
@@ -148,6 +150,8 @@ int create_pps_interrupt_device_node(dev_t *pps_dev_t,
 				     struct cdev **pps_cdev,
 				     struct class **pps_class,
 				     char *pps_dev_node_name);
+void ethqos_remove_pps_dev(struct qcom_ethqos *ethqos);
 int ppsout_config(struct stmmac_priv *priv, struct pps_cfg *eth_pps_cfg);
+int ethqos_init_pps(void *priv_n);
 struct qcom_ethqos *get_pethqos(void);
 #endif

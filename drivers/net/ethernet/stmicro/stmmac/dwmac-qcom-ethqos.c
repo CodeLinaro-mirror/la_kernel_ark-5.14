@@ -77,6 +77,7 @@
 #define RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN	BIT(5)
 
 #define EMAC_I0_EMAC_CORE_HW_VERSION_RGOFFADDR 0x00000070
+#define EMAC_HW_v2_3_2_RG 0x20030002
 #define EMAC_HW_v3_0_0_RG 0x30000000
 
 #define MII_BUSY 0x00000001
@@ -152,12 +153,13 @@ static int ethqos_handle_prv_ioctl(struct net_device *dev, struct ifreq *ifr, in
 	if (copy_from_user(&req, ifr->ifr_ifru.ifru_data,
 			   sizeof(struct ifr_data_struct)))
 		return -EFAULT;
-	if (copy_from_user(&eth_pps_cfg, (void __user *)req.ptr,
-			   sizeof(struct pps_cfg)))
-		return -EFAULT;
 
 	switch (req.cmd) {
 	case ETHQOS_CONFIG_PPSOUT_CMD:
+		if (copy_from_user(&eth_pps_cfg, (void __user *)req.ptr,
+				   sizeof(struct pps_cfg)))
+			return -EFAULT;
+
 		ret = ppsout_config(pdata, &eth_pps_cfg);
 		break;
 	}
@@ -1026,6 +1028,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	plat_dat->pmt = 1;
 	plat_dat->tso_en = of_property_read_bool(np, "snps,tso");
 	plat_dat->handle_prv_ioctl = ethqos_handle_prv_ioctl;
+	plat_dat->init_pps = ethqos_init_pps;
 	plat_dat->phy_intr_enable = ethqos_phy_intr_enable;
 
 	/* Get rgmii interface speed for mac2c from device tree */
@@ -1088,7 +1091,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	if (priv->plat->mac2mac_en)
 		priv->plat->mac2mac_link = 0;
 
-	if (ethqos->emac_ver == EMAC_HW_v3_0_0_RG) {
+	if (ethqos->emac_ver == EMAC_HW_v2_3_2_RG) {
 		ethqos_pps_irq_config(ethqos);
 		create_pps_interrupt_device_node(&ethqos->avb_class_a_dev_t,
 						 &ethqos->avb_class_a_cdev,
@@ -1140,6 +1143,8 @@ static int qcom_ethqos_remove(struct platform_device *pdev)
 		free_irq(ethqos->phy_intr, ethqos);
 	}
 
+	if (ethqos->emac_ver == EMAC_HW_v2_3_2_RG)
+		ethqos_remove_pps_dev(ethqos);
 	ethqos_cleanup_debugfs(ethqos);
 	ethqos_free_gpios(ethqos);
 	emac_emb_smmu_exit();
