@@ -14,6 +14,7 @@
 
 #include <linux/platform_device.h>
 #include <linux/phy.h>
+#include <linux/netdevice.h>
 
 #define MTL_MAX_RX_QUEUES	8
 #define MTL_MAX_TX_QUEUES	8
@@ -294,5 +295,10 @@ struct plat_stmmacenet_data {
 	int (*handle_prv_ioctl)(struct net_device *dev, struct ifreq *ifr,
 				int cmd);
 	int (*phy_intr_enable)(void *priv);
+	u16	(*tx_select_queue)
+		(struct net_device *dev, struct sk_buff *skb,
+		 struct net_device *sb_dev);
+	unsigned int (*get_plat_tx_coal_frames)
+		(struct sk_buff *skb);
 };
 #endif
