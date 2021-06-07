@@ -282,5 +282,8 @@ struct plat_stmmacenet_data {
 	bool use_phy_wol;
 
 	struct emac_emb_smmu_cb_ctx stmmac_emb_smmu_ctx;
+	int mac2mac_rgmii_speed;
+	bool mac2mac_en;
+	int mac2mac_link;
 };
 #endif
