@@ -285,6 +285,7 @@ struct plat_stmmacenet_data {
 	bool mac2mac_en;
 	int mac2mac_link;
 	bool mac2mac_88Q5072;
+	bool phy_fixed_link;
 	struct emac_emb_smmu_cb_ctx stmmac_emb_smmu_ctx;
 	bool phy_intr_en_extn_stm;
 	bool phy_intr_en;
