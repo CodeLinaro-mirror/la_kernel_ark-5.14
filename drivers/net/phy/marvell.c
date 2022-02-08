@@ -46,6 +46,7 @@
 #define MII_MARVELL_MISC_TEST_PAGE	0x06
 #define MII_MARVELL_VCT7_PAGE		0x07
 #define MII_MARVELL_WOL_PAGE		0x11
+#define MII_MARVELL_CTL_PAGE		0x12
 
 #define MII_M1011_IEVENT		0x13
 #define MII_M1011_IEVENT_CLEAR		0x0000
@@ -103,6 +104,11 @@
 
 #define MII_88E1510_TEMP_SENSOR		0x1b
 #define MII_88E1510_TEMP_SENSOR_MASK	0xff
+
+#define MII_88EA1512_PHY_MSCR_TX_DELAY	0x50
+#define MII_88EA1512_PHY_MSCR_DELAY_MASK	GENMASK(6, 4)
+#define MII_88EA1512_PHY_SET_DISABLE_AUTOREG	0x8140
+#define MII_88EA1512_PHY_DISABLE_AUTOREG_MASK	GENMASK(15, 6)
 
 #define MII_88E1540_COPPER_CTRL3	0x1a
 #define MII_88E1540_COPPER_CTRL3_LINK_DOWN_DELAY_MASK	GENMASK(11, 10)
@@ -177,6 +183,7 @@
 #define MII_88E1510_GEN_CTRL_REG_1		0x14
 #define MII_88E1510_GEN_CTRL_REG_1_MODE_MASK	0x7
 #define MII_88E1510_GEN_CTRL_REG_1_MODE_SGMII	0x1	/* SGMII to copper */
+#define MII_88EA1512_MODE_RGMII_2_SGMII		0x4
 #define MII_88E1510_GEN_CTRL_REG_1_RESET	0x8000	/* Soft reset */
 
 #define MII_VCT5_TX_RX_MDI0_COUPLING	0x10
@@ -1193,6 +1200,78 @@ static int m88e1510_config_init(struct phy_device *phydev)
 	err = m88e1011_set_downshift(phydev, 3);
 	if (err < 0)
 		return err;
+
+	return m88e1318_config_init(phydev);
+}
+
+static int m88ea1512_config_rgmii_tx_delays(struct phy_device *phydev)
+{
+	int err = 0;
+
+	/* set reg 21_2.4(TX delay) and 21_2.6(speed 1000M) */
+	err = phy_modify_paged(phydev, MII_MARVELL_MSCR_PAGE,
+			       MII_88E1121_PHY_MSCR_REG,
+			       MII_88EA1512_PHY_MSCR_DELAY_MASK,
+			       MII_88EA1512_PHY_MSCR_TX_DELAY);
+	if (err < 0)
+		return err;
+	/* do soft reset from page 0 after modification */
+	err = marvell_set_page(phydev, MII_MARVELL_COPPER_PAGE);
+	if (err < 0)
+		return err;
+
+	err = genphy_soft_reset(phydev);
+	if (err < 0)
+		return err;
+
+	return 0;
+}
+
+static int m88ea1512_config_init(struct phy_device *phydev)
+{
+	int err = 0;
+
+	/* RGMII-to-1000BASE-X mode initialization */
+	if (phy_interface_is_rgmii(phydev)) {
+		err = m88ea1512_config_rgmii_tx_delays(phydev);
+		if (err < 0)
+			return err;
+
+		/* Select page 18 */
+		err = marvell_set_page(phydev, MII_MARVELL_CTL_PAGE);
+		if (err < 0)
+			return err;
+
+		/* In reg 20, write MODE[2:0] = 0x4 (RGMII to SGMII) */
+		err = phy_modify(phydev, MII_88E1510_GEN_CTRL_REG_1,
+				 MII_88E1510_GEN_CTRL_REG_1_MODE_MASK,
+				 MII_88EA1512_MODE_RGMII_2_SGMII);
+		if (err < 0)
+			return err;
+
+		/* PHY reset is necessary after changing MODE[2:0] */
+		err = phy_modify(phydev, MII_88E1510_GEN_CTRL_REG_1, 0,
+				 MII_88E1510_GEN_CTRL_REG_1_RESET);
+		if (err < 0)
+			return err;
+
+		/* Reset page selection */
+		err = marvell_set_page(phydev, MII_MARVELL_FIBER_PAGE);
+		if (err < 0)
+			return err;
+
+		/* Set an disable, speed 1000M, duplex full and soft reset */
+		err = phy_modify(phydev, MII_BMCR,
+				 /* GENMASK(15, 6) */
+				 MII_88EA1512_PHY_DISABLE_AUTOREG_MASK,
+				 /* 0x8140 */
+				 MII_88EA1512_PHY_SET_DISABLE_AUTOREG);
+		if (err < 0)
+			return err;
+	}
+
+	err = phy_read(phydev, MII_M1011_PHY_STATUS);
+	pr_info("%s: reg [17_1] value = 0x%x\n", __func__, err);
 
 	return m88e1318_config_init(phydev);
 }
@@ -2922,7 +3001,7 @@ static struct phy_driver marvell_drivers[] = {
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1510,
-		.phy_id_mask = MARVELL_PHY_ID_MASK,
+		.phy_id_mask = MARVELL_PHY_ID_MASK_ALL,
 		.name = "Marvell 88E1510",
 		.driver_data = DEF_MARVELL_HWMON_OPS(m88e1510_hwmon_ops),
 		.features = PHY_GBIT_FIBRE_FEATURES,
@@ -3142,6 +3221,26 @@ static struct phy_driver marvell_drivers[] = {
 		.get_tunable = m88e1540_get_tunable,
 		.set_tunable = m88e1540_set_tunable,
 	},
+	{
+		.phy_id = MARVELL_PHY_ID_88EA1512,
+		.phy_id_mask = MARVELL_PHY_ID_MASK_ALL,
+		.name = "Marvell 88EA1512",
+		.features = PHY_GBIT_FIBRE_FEATURES,
+		.probe = marvell_probe,
+		.config_init = &m88ea1512_config_init,
+		.config_aneg = &marvell_config_aneg,
+		.read_status = &marvell_read_status,
+		.config_intr = &marvell_config_intr,
+		.get_wol = &m88e1318_get_wol,
+		.set_wol = &m88e1318_set_wol,
+		.resume = &genphy_resume,
+		.suspend = &genphy_suspend,
+		.read_page = marvell_read_page,
+		.write_page = marvell_write_page,
+		.get_sset_count = marvell_get_sset_count,
+		.get_strings = marvell_get_strings,
+		.get_stats = marvell_get_stats,
+	},
 };
 
 module_phy_driver(marvell_drivers);
@@ -3158,7 +3257,7 @@ static struct mdio_device_id __maybe_unused marvell_tbl[] = {
 	{ MARVELL_PHY_ID_88E1240, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1318S, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1116R, MARVELL_PHY_ID_MASK },
-	{ MARVELL_PHY_ID_88E1510, MARVELL_PHY_ID_MASK },
+	{ MARVELL_PHY_ID_88E1510, MARVELL_PHY_ID_MASK_ALL },
 	{ MARVELL_PHY_ID_88E1540, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1545, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E3016, MARVELL_PHY_ID_MASK },
@@ -3167,6 +3266,7 @@ static struct mdio_device_id __maybe_unused marvell_tbl[] = {
 	{ MARVELL_PHY_ID_88E6393_FAMILY, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1340S, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1548P, MARVELL_PHY_ID_MASK },
+	{ MARVELL_PHY_ID_88EA1512, MARVELL_PHY_ID_MASK_ALL },
 	{ }
 };
 

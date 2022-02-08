@@ -4,7 +4,7 @@
 
 /* Mask used for ID comparisons */
 #define MARVELL_PHY_ID_MASK		0xfffffff0
-
+#define MARVELL_PHY_ID_MASK_ALL		0xffffffff
 /* Known PHY IDs */
 #define MARVELL_PHY_ID_88E1101		0x01410c60
 #define MARVELL_PHY_ID_88E1112		0x01410c90
@@ -25,6 +25,7 @@
 #define MARVELL_PHY_ID_88X3310		0x002b09a0
 #define MARVELL_PHY_ID_88E2110		0x002b09b0
 #define MARVELL_PHY_ID_88X2222		0x01410f10
+#define MARVELL_PHY_ID_88EA1512		0x01410dd4
 
 /* Marvel 88E1111 in Finisar SFP module with modified PHY ID */
 #define MARVELL_PHY_ID_88E1111_FINISAR	0x01ff0cc0
