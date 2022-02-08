@@ -89,13 +89,20 @@
 #define MII_BUSY 0x00000001
 #define MII_WRITE 0x00000002
 
-#define DWC_ETH_QOS_PHY_INTR_STATUS     0x0013
-
 #define LINK_UP 1
 #define LINK_DOWN 0
 
 #define LINK_DOWN_STATE 0x800
 #define LINK_UP_STATE 0x400
+
+#define DWC_ETH_QOS_PHY_INTR_STATUS 0x0013
+#define DWC_ETH_QOS_BASIC_STATUS    0x0001
+#define LINK_STATE_MASK 0x4
+#define AUTONEG_STATE_MASK 0x20
+
+#define MARVEL_PHY_INTCS 0x13
+#define MARVEL_PHY_STATUS 0x11
+#define MARVEL_LINK_UP_STATUS BIT(10)
 
 struct emac_emb_smmu_cb_ctx emac_emb_smmu_ctx = {0};
 struct plat_stmmacenet_data *plat_dat;
@@ -308,7 +315,8 @@ static int ethqos_rgmii_macro_init(struct qcom_ethqos *ethqos)
 		rgmii_updatel(ethqos, RGMII_CONFIG2_DATA_DIVIDE_CLK_SEL,
 			      0, RGMII_IO_MACRO_CONFIG2);
 
-		if (priv->plat->mac2mac_88Q5072)
+		if (priv->plat->mac2mac_88Q5072 ||
+		    (priv->phydev && priv->phydev->phy_id == MARVEL_PHY_ID))
 			rgmii_updatel(ethqos,
 				      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
 				      0, RGMII_IO_MACRO_CONFIG2);
@@ -355,9 +363,16 @@ static int ethqos_rgmii_macro_init(struct qcom_ethqos *ethqos)
 			      0, RGMII_IO_MACRO_CONFIG);
 		rgmii_updatel(ethqos, RGMII_CONFIG2_DATA_DIVIDE_CLK_SEL,
 			      0, RGMII_IO_MACRO_CONFIG2);
-		rgmii_updatel(ethqos, RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
-			      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
-			      RGMII_IO_MACRO_CONFIG2);
+		if (priv->plat->mac2mac_88Q5072 ||
+		    (priv->phydev && priv->phydev->phy_id == MARVEL_PHY_ID))
+			rgmii_updatel(ethqos,
+				      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
+				      0, RGMII_IO_MACRO_CONFIG2);
+		else
+			rgmii_updatel(ethqos,
+				      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
+				      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
+				      RGMII_IO_MACRO_CONFIG2);
 		rgmii_updatel(ethqos, RGMII_CONFIG_MAX_SPD_PRG_2,
 			      BIT(6), RGMII_IO_MACRO_CONFIG);
 		rgmii_updatel(ethqos, RGMII_CONFIG2_RSVD_CONFIG15,
@@ -403,15 +418,17 @@ static int ethqos_rgmii_macro_init(struct qcom_ethqos *ethqos)
 		rgmii_updatel(ethqos, RGMII_CONFIG2_DATA_DIVIDE_CLK_SEL,
 			      0, RGMII_IO_MACRO_CONFIG2);
 
-		if (ethqos->emac_ver == EMAC_HW_v3_0_0_RG)
+		if (ethqos->emac_ver != EMAC_HW_v3_0_0_RG ||
+		    priv->plat->mac2mac_88Q5072 ||
+		    (priv->phydev && priv->phydev->phy_id == MARVEL_PHY_ID))
+			rgmii_updatel(ethqos,
+				      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
+				      0, RGMII_IO_MACRO_CONFIG2);
+		else
 			rgmii_updatel(ethqos,
 				      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
 				      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
 				      RGMII_IO_MACRO_CONFIG2);
-		else
-			rgmii_updatel(ethqos,
-				      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
-				      0, RGMII_IO_MACRO_CONFIG2);
 		rgmii_updatel(ethqos, RGMII_CONFIG_MAX_SPD_PRG_9,
 			      BIT(12) | GENMASK(9, 8),
 			      RGMII_IO_MACRO_CONFIG);
@@ -589,13 +606,50 @@ static void ethqos_handle_phy_interrupt(struct qcom_ethqos *ethqos)
 
 	struct net_device *dev = platform_get_drvdata(pdev);
 	struct stmmac_priv *priv = netdev_priv(dev);
+	int marvel_intr_status = 0;
+	int marvel_status = 0;
+	int phy_id = 0;
 
-	phy_intr_status = ethqos_mdio_read(priv, priv->plat->phy_addr,
-					   DWC_ETH_QOS_PHY_INTR_STATUS);
+	if (!priv->phydev)
+		return;
 
-	if ((phy_intr_status & LINK_UP_STATE) ||
-	    (phy_intr_status & LINK_DOWN_STATE))
-		phy_mac_interrupt(priv->phydev);
+	phy_id = priv->phydev->phy_id & priv->phydev->drv->phy_id_mask;
+
+	if (phy_id == MARVEL_PHY_ID) {
+		marvel_intr_status =
+			ethqos_mdio_read(priv,
+					 priv->plat->phy_addr,
+					 MARVEL_PHY_INTCS);
+		marvel_status = ethqos_mdio_read(priv,
+						 priv->plat->phy_addr,
+						 MARVEL_PHY_STATUS);
+
+		/* Interrupt received for link state change */
+		phy_intr_status = ethqos_mdio_read(priv,
+						   priv->plat->phy_addr,
+						   DWC_ETH_QOS_BASIC_STATUS);
+		ETHQOSDBG("Basic Status Reg (%#x) = %#x\n",
+			  DWC_ETH_QOS_BASIC_STATUS, phy_intr_status);
+
+		if (phy_intr_status & LINK_STATE_MASK) {
+			if (marvel_status & MARVEL_LINK_UP_STATUS)
+				ETHQOSDBG("Intr for link UP state\n");
+			phy_mac_interrupt(priv->phydev);
+		} else if (!(phy_intr_status & LINK_STATE_MASK)) {
+			ETHQOSDBG("Intr for link DOWN state\n");
+			phy_mac_interrupt(priv->phydev);
+		} else if (!(phy_intr_status & AUTONEG_STATE_MASK)) {
+			ETHQOSDBG("Intr for link down with auto-neg err\n");
+		}
+	} else {
+		phy_intr_status =
+			ethqos_mdio_read(priv, priv->plat->phy_addr,
+					 DWC_ETH_QOS_PHY_INTR_STATUS);
+
+		if ((phy_intr_status & LINK_UP_STATE) ||
+		    (phy_intr_status & LINK_DOWN_STATE))
+			phy_mac_interrupt(priv->phydev);
+	}
 }
 
 static void ethqos_defer_phy_isr_work(struct work_struct *work)
@@ -762,6 +816,9 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 			   plat_dat->mac2mac_rgmii_speed);
 	plat_dat->mac2mac_88Q5072 =
 		of_property_read_bool(np, "mac2mac-88Q5072");
+
+	plat_dat->phy_fixed_link =
+		of_property_read_bool(np, "phy-fixed-link");
 
 	if (of_property_read_bool(pdev->dev.of_node,
 				  "emac-core-version")) {
