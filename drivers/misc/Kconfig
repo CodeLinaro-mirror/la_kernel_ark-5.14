@@ -231,6 +231,13 @@ config QCOM_COINCELL
 	  to maintain PMIC register and RTC state in the absence of
 	  external power.
 
+config KIUMD
+	tristate "QCOM_KIUMD"
+	depends on ARCH_QCOM
+	help
+	  This driver VFIO based kernel interface for user mode drivers to map DMA-BUF
+	  to device SMMU
+
 config QCOM_FASTRPC
 	tristate "Qualcomm FastRPC"
 	depends on ARCH_QCOM || COMPILE_TEST
