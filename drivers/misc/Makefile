@@ -59,3 +59,4 @@ obj-$(CONFIG_XILINX_SDFEC)	+= xilinx_sdfec.o
 obj-$(CONFIG_HISI_HIKEY_USB)	+= hisi_hikey_usb.o
 obj-$(CONFIG_OPEN_DICE)		+= open-dice.o
 obj-$(CONFIG_KIUMD) 		+= kiumd.o
+obj-$(CONFIG_VFIO_IOMMU_QCOM) 	+= vfio_iommu_qcom.o
