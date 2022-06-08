@@ -53,6 +53,14 @@
 #define	STMMAC_ALIGN(x)		ALIGN(ALIGN(x, SMP_CACHE_BYTES), 16)
 #define	TSO_MAX_BUFF_SIZE	(SZ_16K - 1)
 
+#if IS_ENABLED(CONFIG_DWMAC_QCOM_VER3)
+#define GMAC4_REG_NUM	146
+/*DMA_CH_REG_NUM * 1(ch used) * 2(offset+val) + 4(bus_mode & sys_bus_mode)*/
+#define V3_DMA_BUF_LEN	38
+#else
+#define GMAC4_REG_NUM	132
+#endif
+
 /* Module parameters */
 #define TX_TIMEO	5000
 static int watchdog = TX_TIMEO;
@@ -6176,6 +6184,55 @@ static int stmmac_dma_cap_show(struct seq_file *seq, void *v)
 }
 DEFINE_SHOW_ATTRIBUTE(stmmac_dma_cap);
 
+static int stmmac_mac_reg_show(struct seq_file *seq, void *v)
+{
+	struct net_device *dev = seq->private;
+	struct stmmac_priv *priv = netdev_priv(dev);
+	u32 reg[GMAC4_REG_NUM] = {0};
+	int i;
+
+	if (!priv->hw) {
+		seq_puts(seq, "HW address is null\n");
+		return 0;
+	}
+
+	stmmac_dump_mac_regs(priv, priv->hw, reg);
+	seq_puts(seq, "==============================\n");
+	seq_puts(seq, "\tReg offset     Value\n");
+	for (i = 0; i < GMAC4_REG_NUM; i++)
+		seq_printf(seq, "\t0x%x:           0x%x\n", i * 4, reg[i]);
+
+	seq_puts(seq, "==============================\n");
+
+	return 0;
+}
+DEFINE_SHOW_ATTRIBUTE(stmmac_mac_reg);
+
+static int stmmac_dma_reg_show(struct seq_file *seq, void *v)
+{
+	struct net_device *dev = seq->private;
+	struct stmmac_priv *priv = netdev_priv(dev);
+	u32 buf[V3_DMA_BUF_LEN] = {0};
+	int i;
+
+	if (!priv->ioaddr) {
+		seq_puts(seq, "HW address is null\n");
+		return 0;
+	}
+
+	stmmac_dump_dma_regs(priv, priv->ioaddr, buf);
+	seq_puts(seq, "==============================\n");
+	seq_puts(seq, "\tReg offset     Value\n");
+	for (i = 0; i < V3_DMA_BUF_LEN; i += 2)
+		seq_printf(seq, "\t0x%x:           0x%x\n",
+			   buf[i], buf[i + 1]);
+
+	seq_puts(seq, "==============================\n");
+
+	return 0;
+}
+DEFINE_SHOW_ATTRIBUTE(stmmac_dma_reg);
+
 /* Use network device events to rename debugfs file entries.
  */
 static int stmmac_device_event(struct notifier_block *unused,
@@ -6220,6 +6277,14 @@ static void stmmac_init_fs(struct net_device *dev)
 	/* Entry to report the DMA HW features */
 	debugfs_create_file("dma_cap", 0444, priv->dbgfs_dir, dev,
 			    &stmmac_dma_cap_fops);
+
+	/* Entry to report MAC register config value */
+	debugfs_create_file("mac_reg", 0444, priv->dbgfs_dir, dev,
+			    &stmmac_mac_reg_fops);
+
+	/* Entry to report DMA register config value */
+	debugfs_create_file("dma_reg", 0444, priv->dbgfs_dir, dev,
+			    &stmmac_dma_reg_fops);
 
 	rtnl_unlock();
 }
