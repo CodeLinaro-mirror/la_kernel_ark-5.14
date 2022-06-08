@@ -179,6 +179,44 @@ static void dwmac4_dma_init(void __iomem *ioaddr,
 static void _dwmac4_dump_dma_regs(void __iomem *ioaddr, u32 channel,
 				  u32 *reg_space)
 {
+#if IS_ENABLED(CONFIG_DWMAC_QCOM_VER3)
+	int i = channel * DMA_CH_REG_NUM * 2;
+
+	reg_space[i + 4] = DMA_CHAN_CONTROL(channel);
+	reg_space[i + 5] = readl(ioaddr + DMA_CHAN_CONTROL(channel));
+	reg_space[i + 6] = DMA_CHAN_TX_CONTROL(channel);
+	reg_space[i + 7] = readl(ioaddr + DMA_CHAN_TX_CONTROL(channel));
+	reg_space[i + 8] = DMA_CHAN_RX_CONTROL(channel);
+	reg_space[i + 9] = readl(ioaddr + DMA_CHAN_RX_CONTROL(channel));
+	reg_space[i + 10] = DMA_CHAN_TX_BASE_ADDR(channel);
+	reg_space[i + 11] = readl(ioaddr + DMA_CHAN_TX_BASE_ADDR(channel));
+	reg_space[i + 12] = DMA_CHAN_RX_BASE_ADDR(channel);
+	reg_space[i + 13] = readl(ioaddr + DMA_CHAN_RX_BASE_ADDR(channel));
+	reg_space[i + 14] = DMA_CHAN_TX_END_ADDR(channel);
+	reg_space[i + 15] = readl(ioaddr + DMA_CHAN_TX_END_ADDR(channel));
+	reg_space[i + 16] = DMA_CHAN_RX_END_ADDR(channel);
+	reg_space[i + 17] = readl(ioaddr + DMA_CHAN_RX_END_ADDR(channel));
+	reg_space[i + 18] = DMA_CHAN_TX_RING_LEN(channel);
+	reg_space[i + 19] = readl(ioaddr + DMA_CHAN_TX_RING_LEN(channel));
+	reg_space[i + 20] = DMA_CHAN_RX_RING_LEN(channel);
+	reg_space[i + 21] = readl(ioaddr + DMA_CHAN_RX_RING_LEN(channel));
+	reg_space[i + 22] = DMA_CHAN_INTR_ENA(channel);
+	reg_space[i + 23] = readl(ioaddr + DMA_CHAN_INTR_ENA(channel));
+	reg_space[i + 24] = DMA_CHAN_RX_WATCHDOG(channel);
+	reg_space[i + 25] = readl(ioaddr + DMA_CHAN_RX_WATCHDOG(channel));
+	reg_space[i + 26] = DMA_CHAN_SLOT_CTRL_STATUS(channel);
+	reg_space[i + 27] = readl(ioaddr + DMA_CHAN_SLOT_CTRL_STATUS(channel));
+	reg_space[i + 28] = DMA_CHAN_CUR_TX_DESC(channel);
+	reg_space[i + 29] = readl(ioaddr + DMA_CHAN_CUR_TX_DESC(channel));
+	reg_space[i + 30] = DMA_CHAN_CUR_RX_DESC(channel);
+	reg_space[i + 31] = readl(ioaddr + DMA_CHAN_CUR_RX_DESC(channel));
+	reg_space[i + 32] = DMA_CHAN_CUR_TX_BUF_ADDR(channel);
+	reg_space[i + 33] = readl(ioaddr + DMA_CHAN_CUR_TX_BUF_ADDR(channel));
+	reg_space[i + 34] = DMA_CHAN_CUR_RX_BUF_ADDR(channel);
+	reg_space[i + 35] = readl(ioaddr + DMA_CHAN_CUR_RX_BUF_ADDR(channel));
+	reg_space[i + 36] = DMA_CHAN_STATUS(channel);
+	reg_space[i + 37] = readl(ioaddr + DMA_CHAN_STATUS(channel));
+#else
 	reg_space[DMA_CHAN_CONTROL(channel) / 4] =
 		readl(ioaddr + DMA_CHAN_CONTROL(channel));
 	reg_space[DMA_CHAN_TX_CONTROL(channel) / 4] =
@@ -213,12 +251,19 @@ static void _dwmac4_dump_dma_regs(void __iomem *ioaddr, u32 channel,
 		readl(ioaddr + DMA_CHAN_CUR_RX_BUF_ADDR(channel));
 	reg_space[DMA_CHAN_STATUS(channel) / 4] =
 		readl(ioaddr + DMA_CHAN_STATUS(channel));
+#endif
 }
 
 static void dwmac4_dump_dma_regs(void __iomem *ioaddr, u32 *reg_space)
 {
 	int i;
 
+#if IS_ENABLED(CONFIG_DWMAC_QCOM_VER3)
+	reg_space[0] = DMA_BUS_MODE;
+	reg_space[1] = readl(ioaddr + DMA_BUS_MODE);
+	reg_space[2] = DMA_SYS_BUS_MODE;
+	reg_space[3] = readl(ioaddr + DMA_SYS_BUS_MODE);
+#endif
 	for (i = 0; i < DMA_CHANNEL_NB_MAX; i++)
 		_dwmac4_dump_dma_regs(ioaddr, i, reg_space);
 }

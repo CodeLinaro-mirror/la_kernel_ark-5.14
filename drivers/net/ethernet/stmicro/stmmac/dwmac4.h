@@ -494,8 +494,12 @@ enum power_event {
 			GMAC_CONFIG_JE)
 
 /* To dump the core regs excluding  the Address Registers */
+#if IS_ENABLED(CONFIG_DWMAC_QCOM_VER3)
+#define	GMAC_REG_NUM	146
+#define DMA_CH_REG_NUM	17
+#else
 #define	GMAC_REG_NUM	132
-
+#endif
 /*  MTL debug */
 #define MTL_DEBUG_TXSTSFSTS		BIT(5)
 #define MTL_DEBUG_TXFSTS		BIT(4)
