@@ -691,6 +691,7 @@ static int ethqos_phy_intr_enable(void *priv_n)
 }
 
 static const struct of_device_id qcom_ethqos_match[] = {
+	{ .compatible = "qcom,stmmac-ethqos-emac0", },
 	{ .compatible = "qcom,stmmac-ethqos-emac1", },
 	{ .compatible = "qcom,emac-smmu-embedded", },
 	{ }
