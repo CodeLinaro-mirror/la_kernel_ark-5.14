@@ -454,6 +454,7 @@ static void stmmac_ethtool_gregs(struct net_device *dev,
 	u32 *reg_space = (u32 *) space;
 
 	stmmac_dump_mac_regs(priv, priv->hw, reg_space);
+#if !IS_ENABLED(CONFIG_DWMAC_QCOM_VER3)
 	stmmac_dump_dma_regs(priv, priv->ioaddr, reg_space);
 
 	if (!priv->plat->has_xgmac) {
@@ -462,6 +463,7 @@ static void stmmac_ethtool_gregs(struct net_device *dev,
 		       &reg_space[DMA_BUS_MODE / 4],
 		       NUM_DWMAC1000_DMA_REGS * 4);
 	}
+#endif
 }
 
 static int stmmac_nway_reset(struct net_device *dev)
