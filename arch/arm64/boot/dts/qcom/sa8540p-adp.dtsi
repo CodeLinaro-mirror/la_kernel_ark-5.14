@@ -899,6 +899,29 @@
 			compatible = "qcom,emac-smmu-embedded";
 			iommus = <&apps_smmu 0x4C0 0xf>;
 		};
+
+		rgmii-io-macro-info {
+			prg-rclk-dly = <904>;
+			config-cdr-en = <1>;
+			mclk-gating-en = <1>;
+			cdr-fine-phase = <1>;
+			skip-calc-traffic = <1>;
+			data-divide-clk-sel = <0>;
+			loopback-en = <0>;
+			rx-prog-swap = <1>;
+			tx-clk-phase-shift-en = <0>;
+			dll-clock-dis = <0>;
+			mclk-freq-calc = <0x28>;
+			ddr-traffic-init-sel = <0>;
+			ddr-traffic-init-sw = <0>;
+			ddr-cal-en = <1>;
+			tcx0-cycles-dly-line = <64>;
+			tcx0-cycles-cnt = <4>;
+			test-ctl = <0xC1800000>;
+			usr-ctl = <0x2C010800>;
+			l3-master-dev = <1>;
+			ipv6-wq = <0>;
+		};
 	};
 
 	emac1_hw: qcom,ethernet@23000000 {
@@ -966,11 +989,33 @@
 		phy-mode = "rgmii";
 		mac2mac;
 		mac2mac-rgmii-speed = <1000>;
-		mac2mac-88Q5072;
 
 		emac1_emb_smmu: emac1_emb_smmu {
 			compatible = "qcom,emac-smmu-embedded";
 			iommus = <&apps_smmu 0x40 0xf>;
+		};
+
+		rgmii-io-macro-info {
+			prg-rclk-dly = <904>;
+			config-cdr-en = <1>;
+			mclk-gating-en = <1>;
+			cdr-fine-phase = <1>;
+			skip-calc-traffic = <1>;
+			data-divide-clk-sel = <0>;
+			loopback-en = <0>;
+			rx-prog-swap = <1>;
+			tx-clk-phase-shift-en = <0>;
+			dll-clock-dis = <0>;
+			mclk-freq-calc = <0x28>;
+			ddr-traffic-init-sel = <0>;
+			ddr-traffic-init-sw = <0>;
+			ddr-cal-en = <1>;
+			tcx0-cycles-dly-line = <64>;
+			tcx0-cycles-cnt = <4>;
+			test-ctl = <0xC1800000>;
+			usr-ctl = <0x2C010800>;
+			l3-master-dev = <1>;
+			ipv6-wq = <0>;
 		};
 	};
 };
