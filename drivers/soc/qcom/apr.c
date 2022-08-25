@@ -385,9 +385,10 @@ static int apr_device_remove(struct device *dev)
 	spin_lock(&apr->svcs_lock);
 	idr_remove(&apr->svcs_idr, adev->svc.id);
 	spin_unlock(&apr->svcs_lock);
-}
 
 	return 0;
+
+}
 
 static int apr_uevent(struct device *dev, struct kobj_uevent_env *env)
 {
