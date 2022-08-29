@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ */
+
+/dts-v1/;
+
+#include "lemans.dtsi"
+/ {
+	model = "Qualcomm Technologies, Inc. Lemans SoC";
+	compatible = "qcom,lemans";
+	qcom,board-id = <0x10019 0>;
+};
