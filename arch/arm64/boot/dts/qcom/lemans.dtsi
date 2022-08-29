@@ -477,6 +477,17 @@
 		};
 	};
 
+	tlmm: pinctrl@f000000 {
+		compatible = "qcom,lemans-pinctrl";
+		reg = <0xf000000 0x1000000>;
+		interrupts = <GIC_SPI 208 IRQ_TYPE_LEVEL_HIGH>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		gpio-ranges = <&tlmm 0 0 149>;
+	};
+
 	watchdog@17c10000 {
 		compatible = "qcom,kpss-wdt";
 		reg = <0x17c10000 0x1000>;
@@ -484,3 +495,4 @@
 		interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>;
 	};
 };
+#include "lemans-pinctrl.dtsi"
