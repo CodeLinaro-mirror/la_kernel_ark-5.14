@@ -5840,11 +5840,13 @@ int fastrpc_get_info(struct fastrpc_file *fl, uint32_t *info)
 	if (err)
 		goto bail;
 
+#if 0	
 	VERIFY(err, !fastrpc_session_exists(me, cid, fl->tgid));
 	if (err) {
 		err = -EEXIST;
 		goto bail;
 	}
+#endif
 
 	if (cid == NOTIF_DEV_CID) {
 		fl->cid = cid;
