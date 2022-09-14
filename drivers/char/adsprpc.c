@@ -3687,7 +3687,7 @@ static int fastrpc_init_create_dynamic_process(struct fastrpc_file *fl,
 	 * additional static heap initialized within the process.
 	 */
 	if (fl->is_unsigned_pd)
-		dsp_userpd_memlen += 2*one_mb;
+		dsp_userpd_memlen += 30*one_mb;
 	memlen = ALIGN(max(dsp_userpd_memlen, init->filelen * 4), one_mb);
 	//imem_dma_attr = DMA_ATTR_DELAYED_UNMAP | DMA_ATTR_NO_KERNEL_MAPPING;
 	//
