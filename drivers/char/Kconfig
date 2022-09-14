@@ -453,3 +453,13 @@ config RANDOM_TRUST_BOOTLOADER
 	pool. Otherwise, say N here so it will be regarded as device input that
 	only mixes the entropy pool. This can also be configured at boot with
 	"random.trust_bootloader=on/off".
+
+config QCOM_ADSPRPC
+        tristate "QTI FastRPC driver"
+        depends on RPMSG && HAS_DMA && CMA && MMU
+        help
+                Provides a communication mechanism that allows clients to
+                make remote method invocations across processor boundary to
+                applications/compute DSP processor.
+                Say M if you want to enable this module.
+	
