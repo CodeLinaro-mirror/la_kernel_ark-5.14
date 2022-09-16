@@ -1219,7 +1219,7 @@ static const struct rpmh_vreg_init_data pmr735a_vreg_data[] = {
 	{}
 };
 
-static const struct rpmh_vreg_init_data pmm8650_vreg_data[] = {
+static const struct rpmh_vreg_init_data pmm8775_vreg_data[] = {
 	RPMH_VREG("smps1",  "smp%s1",  &pmic5_ftsmps510,  "vdd-s1"),
 	RPMH_VREG("smps2",  "smp%s2",  &pmic5_ftsmps510,  "vdd-s2"),
 	RPMH_VREG("smps3",  "smp%s3",  &pmic5_ftsmps510,  "vdd-s3"),
@@ -1364,8 +1364,8 @@ static const struct of_device_id __maybe_unused rpmh_regulator_match_table[] = {
 		.data = pmr735a_vreg_data,
 	},
 	{
-		.compatible = "qcom,pmm8650-rpmh-regulators",
-		.data = pmm8650_vreg_data,
+		.compatible = "qcom,pmm8775-rpmh-regulators",
+		.data = pmm8775_vreg_data,
 	},
 	{}
 };

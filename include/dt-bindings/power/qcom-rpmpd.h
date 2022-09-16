@@ -283,6 +283,25 @@
 #define QCM2290_VDD_LPI_CX	6
 #define QCM2290_VDD_LPI_MX	7
 
+/* Lemans Power Domain Indexes */
+#define LEMANS_CX		0
+#define LEMANS_CX_AO		1
+#define LEMANS_DDR		2
+#define LEMANS_EBI		3
+#define LEMANS_GFX		4
+#define LEMANS_LCX		5
+#define LEMANS_LMX		6
+#define LEMANS_MMCX		7
+#define LEMANS_MMCX_AO		8
+#define LEMANS_MSS		9
+#define LEMANS_MX		10
+#define LEMANS_MX_AO		11
+#define LEMANS_MXC		12
+#define LEMANS_MXC_AO		13
+#define LEMANS_NSP0		14
+#define LEMANS_NSP1		15
+#define LEMANS_XO		16
+
 /* RPM SMD Power Domain performance levels */
 #define RPM_SMD_LEVEL_RETENTION       16
 #define RPM_SMD_LEVEL_RETENTION_PLUS  32

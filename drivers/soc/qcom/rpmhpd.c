@@ -185,6 +185,16 @@ static struct rpmhpd nsp = {
 	.res_name = "nsp.lvl",
 };
 
+static struct rpmhpd nsp0 = {
+	.pd = { .name = "nsp0", },
+	.res_name = "nsp0.lvl",
+};
+
+static struct rpmhpd nsp1 = {
+	.pd = { .name = "nsp1", },
+	.res_name = "nsp1.lvl",
+};
+
 static struct rpmhpd qphy = {
 	.pd = { .name = "qphy", },
 	.res_name = "qphy.lvl",
@@ -429,6 +439,29 @@ static const struct rpmhpd_desc sc8280xp_desc = {
 	.num_pds = ARRAY_SIZE(sc8280xp_rpmhpds),
 };
 
+/* Lemans RPMH powerdomains */
+static struct rpmhpd *lemans_rpmhpds[] = {
+	[LEMANS_CX] = &cx,
+	[LEMANS_CX_AO] = &cx_ao,
+	[LEMANS_EBI] = &ebi,
+	[LEMANS_GFX] = &gfx,
+	[LEMANS_LCX] = &lcx,
+	[LEMANS_LMX] = &lmx,
+	[LEMANS_MMCX] = &mmcx,
+	[LEMANS_MMCX_AO] = &mmcx_ao,
+	[LEMANS_MXC] = &mxc,
+	[LEMANS_MXC_AO] = &mxc_ao,
+	[LEMANS_MX] = &mx,
+	[LEMANS_MX_AO] = &mx_ao,
+	[LEMANS_NSP0] = &nsp0,
+	[LEMANS_NSP1] = &nsp1,
+};
+
+static const struct rpmhpd_desc lemans_desc = {
+	.rpmhpds = lemans_rpmhpds,
+	.num_pds = ARRAY_SIZE(lemans_rpmhpds),
+};
+
 static const struct of_device_id rpmhpd_match_table[] = {
 	{ .compatible = "qcom,sa8540p-rpmhpd", .data = &sa8540p_desc },
 	{ .compatible = "qcom,sc7180-rpmhpd", .data = &sc7180_desc },
@@ -443,6 +476,7 @@ static const struct of_device_id rpmhpd_match_table[] = {
 	{ .compatible = "qcom,sm8250-rpmhpd", .data = &sm8250_desc },
 	{ .compatible = "qcom,sm8350-rpmhpd", .data = &sm8350_desc },
 	{ .compatible = "qcom,sm8450-rpmhpd", .data = &sm8450_desc },
+	{ .compatible = "qcom,lemans-rpmhpd", .data = &lemans_desc },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, rpmhpd_match_table);
@@ -724,4 +758,4 @@ static int __init rpmhpd_init(void)
 core_initcall(rpmhpd_init);
 
 MODULE_DESCRIPTION("Qualcomm Technologies, Inc. RPMh Power Domain Driver");
-MODULE_LICENSE("GPL v2");
+
