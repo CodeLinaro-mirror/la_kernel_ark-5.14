@@ -182,17 +182,24 @@
 	};
 };
 
-&pcie3a {
-	wake-gpios = <&tlmm 56 GPIO_ACTIVE_HIGH>;
+&pcie2a {
+	status = "okay";
+};
+
+&pcie2a_phy {
+	vdda-phy-supply = <&vreg_l11a>;
+	vdda-pll-supply = <&vreg_l3a>;
 
 	status = "okay";
+};
+
+&pcie3a {
+	wake-gpios = <&tlmm 56 GPIO_ACTIVE_HIGH>;
 };
 
 &pcie3a_phy {
 	vdda-phy-supply = <&vreg_l11a>;
 	vdda-pll-supply = <&vreg_l3a>;
-
-	status = "okay";
 };
 
 &qup2 {
