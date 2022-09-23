@@ -192,6 +192,7 @@ static struct rpmhpd qphy = {
 
 /* SA8540P RPMH powerdomains */
 static struct rpmhpd *sa8540p_rpmhpds[] = {
+#if 0
 	[SC8280XP_CX] = &cx,
 	[SC8280XP_CX_AO] = &cx_ao,
 	[SC8280XP_EBI] = &ebi,
@@ -203,6 +204,18 @@ static struct rpmhpd *sa8540p_rpmhpds[] = {
 	[SC8280XP_MX] = &mx,
 	[SC8280XP_MX_AO] = &mx_ao,
 	[SC8280XP_NSP] = &nsp,
+#endif
+	[SC8280XP_CX] = &cx,
+        [SC8280XP_CX_AO] = &cx_ao,
+        [SC8280XP_MX] = &mx,
+        [SC8280XP_MX_AO] = &mx_ao,
+        [SC8280XP_EBI] = &ebi,
+        [SC8280XP_LCX] = &lcx,
+        [SC8280XP_LMX] = &lmx,
+        [SC8280XP_GFX] = &gfx,
+        [SC8280XP_MMCX] = &mmcx,
+        [SC8280XP_MMCX_AO] = &mmcx_ao,
+        [SC8280XP_NSP] = &nsp,
 };
 
 static const struct rpmhpd_desc sa8540p_desc = {
@@ -528,13 +541,13 @@ static int rpmhpd_aggregate_corner(struct rpmhpd *pd, unsigned int corner)
 static int rpmhpd_power_on(struct generic_pm_domain *domain)
 {
 	struct rpmhpd *pd = domain_to_rpmhpd(domain);
-	unsigned int corner;
-	int ret;
+	int ret = 0;
 
 	mutex_lock(&rpmhpd_lock);
 
-	corner = max(pd->corner, pd->enable_corner);
-	ret = rpmhpd_aggregate_corner(pd, corner);
+	if (pd->corner)
+		ret = rpmhpd_aggregate_corner(pd, pd->corner);
+
 	if (!ret)
 		pd->enabled = true;
 
