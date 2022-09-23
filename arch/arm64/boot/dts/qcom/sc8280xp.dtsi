@@ -616,6 +616,27 @@
 			reg = <0 0xaeb00000 0 0x16600000>;
 			no-map;
 		};
+
+                adsp_mem: adsp_region {
+                        compatible = "shared-dma-pool";
+                        alloc-ranges = <0x0 0x00000000 0x0 0xffffffff>;
+                        reusable;
+                        alignment = <0x0 0x400000>;
+                        size = <0x0 0x1000000>;
+                };
+
+                cdsp_sec_mem: cdsp_sec_regions {
+                        no-map;
+                        reg = <0x0 0xa4c00000 0x0 0x3c00000>;
+                };
+
+                cdsp_mem: cdsp_region {
+                        compatible = "shared-dma-pool";
+                        alloc-ranges = <0x0 0x00000000 0x0 0xffffffff>;
+                        reusable;
+                        alignment = <0x0 0x400000>;
+                        size = <0x0 0x400000>;
+                };
 	};
 
 	smp2p-adsp {
@@ -2345,6 +2366,7 @@
 		remoteproc_nsp0: remoteproc@1b300000 {
 			compatible = "qcom,sc8280xp-nsp0-pas";
 			reg = <0 0x1b300000 0 0x100>;
+			status = "ok";
 
 			interrupts-extended = <&intc GIC_SPI 578 IRQ_TYPE_LEVEL_HIGH>,
 					      <&smp2p_nsp0_in 0 IRQ_TYPE_EDGE_RISING>,
@@ -2367,7 +2389,6 @@
 
 			interconnects = <&nspa_noc MASTER_CDSP_PROC 0 &mc_virt SLAVE_EBI1 0>;
 
-			status = "disabled";
 
 			glink-edge {
 				interrupts-extended = <&ipcc IPCC_CLIENT_CDSP
@@ -2379,6 +2400,33 @@
 				label = "nsp0";
 				qcom,remote-pid = <5>;
 
+			        qcom,cdsp_qrtr {
+				    qcom,glink-channels = "IPCRTR";
+				    qcom,intents = <0x800  5
+						0x2000 3
+						0x4400 2>;
+			        };
+                                qcom,msm_fastrpc_rpmsg {
+				    compatible = "qcom,msm-fastrpc-rpmsg";
+				    status = "ok";
+				    qcom,glink-channels = "fastrpcglink-apps-dsp";
+				    qcom,intents = <0x64 64>;
+			        };
+
+				qcom,msm_cdsprm_rpmsg {
+			            compatible = "qcom,msm-cdsprm-rpmsg";
+				    status = "ok";
+				    qcom,glink-channels = "cdsprmglink-apps-dsp";
+				    qcom,intents = <0x20 12>;
+			 	    msm_cdsp_rm: qcom,msm_cdsp_rm {
+			                compatible = "qcom,msm-cdsp-rm";
+				        status = "ok";
+				        qcom,qos-latency-us = <44>;
+				        qcom,qos-maxhold-ms = <20>;
+				    };
+				};
+
+				/*
 				fastrpc {
 					compatible = "qcom,fastrpc";
 					qcom,glink-channels = "fastrpcglink-apps-dsp";
@@ -2470,8 +2518,57 @@
 						iommus = <&apps_smmu 0x318f 0x0420>;
 					};
 				};
+				*/
 			};
 		};
+
+	msm_fastrpc: qcom,msm_fastrpc {
+		compatible = "qcom,msm-fastrpc-compute";
+         	status = "ok";
+		qcom,rpc-latency-us = <235>;
+
+		qcom,msm_fastrpc_compute_cb1 {
+			compatible = "qcom,msm-fastrpc-compute-cb";
+		        status = "ok";
+			label = "cdsprpc-smd";
+			iommus = <&apps_smmu 0x3181 0x0420>;
+			qcom,iommu-dma-addr-pool = <0x80000000 0x78000000>;
+			qcom,iommu-faults = "stall-disable";
+			dma-coherent;
+		};
+		qcom,msm_fastrpc_compute_cb2 {
+			compatible = "qcom,msm-fastrpc-compute-cb";
+		        status = "ok";
+			label = "cdsprpc-smd";
+			iommus = <&apps_smmu 0x3182 0x0420>;
+			qcom,iommu-dma-addr-pool = <0x80000000 0x78000000>;
+			qcom,iommu-faults = "stall-disable";
+			dma-coherent;
+		};
+		qcom,msm_fastrpc_compute_cb3 {
+			compatible = "qcom,msm-fastrpc-compute-cb";
+		        status = "ok";
+			label = "cdsprpc-smd";
+			iommus = <&apps_smmu 0x3183 0x0420>;
+			qcom,iommu-dma-addr-pool = <0x80000000 0x78000000>;
+			qcom,iommu-faults = "stall-disable";
+			dma-coherent;
+		};
+		qcom,msm_fastrpc_compute_cb4 {
+			compatible = "qcom,msm-fastrpc-compute-cb";
+		        status = "ok";
+			label = "cdsprpc-smd";
+			iommus = <&apps_smmu 0x3184 0x0420>;
+			qcom,iommu-dma-addr-pool = <0x80000000 0x78000000>;
+			qcom,iommu-faults = "stall-disable";
+			dma-coherent;
+		};
+        };
+
+	qcom,msm-adsprpc-mem {
+		compatible = "qcom,msm-adsprpc-mem-region";
+		memory-region = <&adsp_mem>;
+	};
 
 		remoteproc_nsp1: remoteproc@21300000 {
 			compatible = "qcom,sc8280xp-nsp1-pas";
