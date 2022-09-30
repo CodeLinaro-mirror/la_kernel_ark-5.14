@@ -20,6 +20,22 @@
 	};
 };
 
+&pcie2a {
+	status = "disabled";
+};
+
+&pcie2a_phy {
+	status = "disabled";
+};
+
+&pcie3a {
+	status = "okay";
+};
+
+&pcie3a_phy {
+	status = "okay";
+};
+
 &ufs_card_hc {
 	/* Currently broken on this board */
 	status = "disabled";
