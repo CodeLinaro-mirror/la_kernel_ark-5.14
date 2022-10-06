@@ -4,4 +4,8 @@
  */
 
 &tlmm {
+	qupv3_se10_2uart_default: qupv3_se10_2uart_default {
+		pins = "gpio46", "gpio47";
+		function = "qup1_se3";
+	};
 };
