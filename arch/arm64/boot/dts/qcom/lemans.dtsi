@@ -5,6 +5,7 @@
 
 #include <dt-bindings/clock/qcom,rpmh.h>
 #include <dt-bindings/clock/qcom,gcc-lemans.h>
+#include <dt-bindings/interconnect/qcom,lemans.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/soc/qcom,rpmh-rsc.h>
 #include <dt-bindings/power/qcom-rpmpd.h>
@@ -392,6 +393,91 @@
 		power-domains = <&rpmhpd LEMANS_CX>;
 	};
 
+	aggre1_noc:interconnect-aggre1-noc {
+		compatible = "qcom,lemans-aggre1-noc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+
+	};
+
+	aggre2_noc: interconnect-aggre2-noc {
+		compatible = "qcom,lemans-aggre2-noc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	clk_virt: interconnect-clk-virt {
+		compatible = "qcom,lemans-clk-virt";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	config_noc: interconnect-config-noc {
+		compatible = "qcom,lemans-config-noc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	dc_noc: interconnect-dc-noc {
+		compatible = "qcom,lemans-dc-noc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	gem_noc: interconnect-gem-noc {
+		compatible = "qcom,lemans-gem-noc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	gpdsp_anoc: interconnect-gpdsp-anoc {
+		compatible = "qcom,lemans-gpdsp-anoc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	lpass_ag_noc: interconnect-lpass-ag-noc {
+		compatible = "qcom,lemans-lpass-ag-noc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	mc_virt: interconnect-mc-virt {
+		compatible = "qcom,lemans-mc-virt";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	mmss_noc: interconnect-mmss-noc {
+		compatible = "qcom,lemans-mmss-noc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	nspa_noc: interconnect-nspa-noc {
+		compatible = "qcom,lemans-nspa-noc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	nspb_noc: interconnect-nspb-noc {
+		compatible = "qcom,lemans-nspb-noc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	pcie_anoc: interconnect-pcie-anoc {
+		compatible = "qcom,lemans-pcie-anoc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
+	system_noc: interconnect-system-noc {
+		compatible = "qcom,lemans-system-noc";
+		#interconnect-cells = <2>;
+		qcom,bcm-voters = <&apps_bcm_voter>;
+	};
+
 	psci {
 		compatible = "arm,psci-1.0";
 		method = "smc";
@@ -446,6 +532,10 @@
 		qcom,tcs-config = <ACTIVE_TCS    2>, <SLEEP_TCS     3>,
 			<WAKE_TCS 3>, <CONTROL_TCS   0>;
 		label = "apps_rsc";
+
+		apps_bcm_voter: bcm_voter {
+			compatible = "qcom,bcm-voter";
+		};
 
 		rpmhcc: clock-controller {
 			compatible = "qcom,lemans-rpmh-clk";
