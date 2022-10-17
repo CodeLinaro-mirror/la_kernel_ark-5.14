@@ -24,6 +24,9 @@
 #include "gdsc.h"
 #include "reset.h"
 
+#define CFG_REG			0x4
+#define RCG_CFG_OFFSET(rcg)	((rcg)->cmd_rcgr + (rcg)->cfg_off + CFG_REG)
+
 /* Need to match the order of clocks in DT binding */
 enum {
 	DT_BI_TCXO,
@@ -3143,7 +3146,7 @@ static struct clk_branch gcc_qupv3_wrap1_s3_clk = {
 				&gcc_qupv3_wrap1_s3_clk_src.clkr.hw,
 			},
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -3458,6 +3461,7 @@ static struct clk_branch gcc_qupv3_wrap_1_m_ahb_clk = {
 		.hw.init = &(const struct clk_init_data){
 			.name = "gcc_qupv3_wrap_1_m_ahb_clk",
 			.ops = &clk_branch2_ops,
+			.flags = CLK_IS_CRITICAL,
 		},
 	},
 };
@@ -3473,6 +3477,7 @@ static struct clk_branch gcc_qupv3_wrap_1_s_ahb_clk = {
 		.hw.init = &(const struct clk_init_data){
 			.name = "gcc_qupv3_wrap_1_s_ahb_clk",
 			.ops = &clk_branch2_ops,
+			.flags = CLK_IS_CRITICAL,
 		},
 	},
 };
@@ -4723,6 +4728,7 @@ static int gcc_lemans_probe(struct platform_device *pdev)
 {
 	struct regmap *regmap;
 	int ret;
+	u32 r, cfg;
 
 	regmap = qcom_cc_map(pdev, &gcc_lemans_desc);
 	if (IS_ERR(regmap))
@@ -4749,7 +4755,23 @@ static int gcc_lemans_probe(struct platform_device *pdev)
 	regmap_update_bits(regmap, 0x34004, BIT(0), BIT(0));
 	regmap_update_bits(regmap, 0x34024, BIT(0), BIT(0));
 
-	return qcom_cc_really_probe(pdev, &gcc_lemans_desc, regmap);;
+	//return qcom_cc_really_probe(pdev, &gcc_lemans_desc, regmap);;
+	ret = qcom_cc_really_probe(pdev, &gcc_lemans_desc, regmap);
+	if (ret) {
+		dev_err(&pdev->dev, "Failed to register GCC clocks\n");
+		return ret;
+	}
+
+	r = regmap_write(regmap, RCG_CFG_OFFSET(&gcc_qupv3_wrap1_s3_clk_src), 0x102601);
+	if (r) {
+		pr_err("%s: Unable to write CFG register for gcc_qupv3_wrap1_s3_clk_src\n",__func__);
+	}
+	r = regmap_write(regmap, 0x244F0, 0x11);
+	if (r) {
+		pr_err("%s: Unable to writ register for gcc_qupv3_wrap1_s3_clk_src\n",__func__);
+	}
+	dev_info(&pdev->dev, "Registered GCC clocks\n");
+	return ret;
 }
 
 static struct platform_driver gcc_lemans_driver = {
