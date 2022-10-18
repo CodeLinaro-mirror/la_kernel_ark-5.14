@@ -119,9 +119,15 @@ struct ethqos_io_macro {
 struct qcom_ethqos {
 	struct platform_device *pdev;
 	void __iomem *rgmii_base;
+	void __iomem *sgmii_base;
+	void __iomem *ioaddr;
+
 
 	unsigned int rgmii_clk_rate;
 	struct clk *rgmii_clk;
+	struct clk *phyaux_clk;
+	struct clk *sgmiref_clk;
+
 	unsigned int speed;
 
 	int gpio_phy_intr_redirect;
