@@ -60,6 +60,7 @@ properties:
       - qcom,sdx55-qmp-pcie-phy
       - qcom,sdx55-qmp-usb3-uni-phy
       - qcom,sdx65-qmp-usb3-uni-phy
+      - qcom,lemans-qmp-ufs-phy
 
   reg:
     minItems: 1
