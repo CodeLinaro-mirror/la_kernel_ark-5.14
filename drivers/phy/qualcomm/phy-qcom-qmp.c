@@ -6482,7 +6482,10 @@ static const struct of_device_id qcom_qmp_phy_of_match_table[] = {
 	}, {
 		.compatible = "qcom,qcm2290-qmp-usb3-phy",
 		.data = &qcm2290_usb3phy_cfg,
-	},
+	},{
+		.compatible = "qcom,lemans-qmp-ufs-phy",
+		.data = &sm8450_ufsphy_cfg,
+ 	},
 	{ },
 };
 MODULE_DEVICE_TABLE(of, qcom_qmp_phy_of_match_table);
