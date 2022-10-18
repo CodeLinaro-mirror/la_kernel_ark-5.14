@@ -172,21 +172,21 @@
 		compatible = "qcom,pmm8775-rpmh-regulators";
 		qcom,pmic-id = "e";
 
-		vreg_s4e: regulator-vreg-s4 {
+		vreg_s4e: smps4 {
 			regulator-name = "vreg_s4e";
 			regulator-min-microvolt = <970000>;
 			regulator-max-microvolt = <1520000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
-		vreg_s7e: regulator-vreg-s7 {
+		vreg_s7e: smps7 {
 			regulator-name = "vreg_s7e";
 			regulator-min-microvolt = <1010000>;
 			regulator-max-microvolt = <1170000>;
 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 		};
 
-		vreg_s9e: regulator-vreg-s9 {
+		vreg_s9e: smps9 {
 			regulator-name = "vreg_s9e";
 			regulator-min-microvolt = <300000>;
 			regulator-max-microvolt = <570000>;
