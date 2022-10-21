@@ -59,6 +59,7 @@
 #define V3_DMA_BUF_LEN	38
 #else
 #define GMAC4_REG_NUM	132
+#define V3_DMA_BUF_LEN	0
 #endif
 
 /* Module parameters */
@@ -6208,6 +6209,7 @@ static int stmmac_mac_reg_show(struct seq_file *seq, void *v)
 }
 DEFINE_SHOW_ATTRIBUTE(stmmac_mac_reg);
 
+#if IS_ENABLED(CONFIG_DWMAC_QCOM_VER3)
 static int stmmac_dma_reg_show(struct seq_file *seq, void *v)
 {
 	struct net_device *dev = seq->private;
@@ -6232,6 +6234,7 @@ static int stmmac_dma_reg_show(struct seq_file *seq, void *v)
 	return 0;
 }
 DEFINE_SHOW_ATTRIBUTE(stmmac_dma_reg);
+#endif
 
 /* Use network device events to rename debugfs file entries.
  */
@@ -6281,11 +6284,11 @@ static void stmmac_init_fs(struct net_device *dev)
 	/* Entry to report MAC register config value */
 	debugfs_create_file("mac_reg", 0444, priv->dbgfs_dir, dev,
 			    &stmmac_mac_reg_fops);
-
+#if IS_ENABLED(CONFIG_DWMAC_QCOM_VER3)
 	/* Entry to report DMA register config value */
 	debugfs_create_file("dma_reg", 0444, priv->dbgfs_dir, dev,
 			    &stmmac_dma_reg_fops);
-
+#endif
 	rtnl_unlock();
 }
 
