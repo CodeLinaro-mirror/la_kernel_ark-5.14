@@ -303,5 +303,7 @@
 #define USB20_PRIM_GDSC                 4
 #define USB30_PRIM_GDSC                 5
 #define USB30_SEC_GDSC                  6
+#define EMAC0_GDSC                      7
+#define EMAC1_GDSC                      8
 
 #endif

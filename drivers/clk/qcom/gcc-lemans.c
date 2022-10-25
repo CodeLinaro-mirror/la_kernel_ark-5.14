@@ -4384,6 +4384,22 @@ static struct gdsc usb30_sec_gdsc = {
 	.pwrsts = PWRSTS_OFF_ON,
 };
 
+static struct gdsc emac0_gdsc = {
+	.gdscr = 0xB6004,
+	.pd = {
+		.name = "emac0_gdsc",
+	},
+	.pwrsts = PWRSTS_OFF_ON,
+};
+
+static struct gdsc emac1_gdsc = {
+	.gdscr = 0xB4004,
+	.pd = {
+		.name = "emac1_gdsc",
+	},
+	.pwrsts = PWRSTS_OFF_ON,
+};
+
 static struct clk_regmap *gcc_lemans_clocks[] = {
 	[GCC_AGGRE_NOC_QUPV3_AXI_CLK] = &gcc_aggre_noc_qupv3_axi_clk.clkr,
 	[GCC_AGGRE_UFS_CARD_AXI_CLK] = &gcc_aggre_ufs_card_axi_clk.clkr,
@@ -4673,6 +4689,8 @@ static struct gdsc *gcc_lemans_gdscs[] = {
 	[USB20_PRIM_GDSC] = &usb20_prim_gdsc,
 	[USB30_PRIM_GDSC] = &usb30_prim_gdsc,
 	[USB30_SEC_GDSC] = &usb30_sec_gdsc,
+	[EMAC0_GDSC] = &emac0_gdsc,
+	[EMAC1_GDSC] = &emac1_gdsc,
 };
 
 static const struct clk_rcg_dfs_data gcc_dfs_clocks[] = {
