@@ -75,7 +75,7 @@ static const struct clk_parent_data gcc_parent_data_tcxo = { .index = DT_BI_TCXO
 
 static struct clk_alpha_pll gcc_gpll0 = {
 	.offset = 0x0,
-	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_LUCID],
+	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_LUCID_EVO],
 	.clkr = {
 		.enable_reg = 0x4b028,
 		.enable_mask = BIT(0),
