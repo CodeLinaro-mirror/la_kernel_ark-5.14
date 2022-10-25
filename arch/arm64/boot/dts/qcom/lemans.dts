@@ -10,6 +10,8 @@
 #include <dt-bindings/spmi/spmi.h>
 
 #include "lemans.dtsi"
+#include "lemans-pmic-overlay.dtsi"
+
 / {
 	model = "Qualcomm Technologies, Inc. Lemans SoC";
 	compatible = "qcom,lemans";
