@@ -197,6 +197,15 @@
 			};
 		};
 	};
+
+	qup_opp_table_100mhz: qup-100mhz-opp-table {
+		compatible = "operating-points-v2";
+
+		opp-100000000 {
+			opp-hz = /bits/ 64 <100000000>;
+			required-opps = <&rpmhpd_opp_svs_l1>;
+		};
+	};
 };
 
 &firmware {
@@ -1574,6 +1583,7 @@
 			<&gem_noc MASTER_APPSS_PROC 0 &config_noc SLAVE_QUP_1 0>,
 			<&aggre2_noc MASTER_QUP_1 0 &mc_virt SLAVE_EBI1 0>;
 			power-domains = <&rpmhpd LEMANS_CX>;
+			operating-points-v2 = <&qup_opp_table_100mhz>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&qup_uart10_default>;
 			status = "ok";
