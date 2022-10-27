@@ -100,4 +100,7 @@
 #define CAM_CC_SFE_LITE_0_BCR				4
 #define CAM_CC_SFE_LITE_1_BCR				5
 
+/* CAM_CC GDSCRs */
+#define TITAN_TOP_GDSC		0
+
 #endif
