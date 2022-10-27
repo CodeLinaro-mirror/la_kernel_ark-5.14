@@ -63,6 +63,7 @@ obj-$(CONFIG_SC_GCC_8180X) += gcc-sc8180x.o
 obj-$(CONFIG_SC_GCC_8280XP) += gcc-sc8280xp.o
 obj-$(CONFIG_SA_CAMCC_LEMANS) += camcc-lemans.o
 obj-$(CONFIG_SA_GCC_LEMANS) += gcc-lemans.o
+obj-$(CONFIG_SA_VIDEOCC_LEMANS) += videocc-lemans.o
 obj-$(CONFIG_SC_GPUCC_7180) += gpucc-sc7180.o
 obj-$(CONFIG_SC_LPASS_CORECC_7180) += lpasscorecc-sc7180.o
 obj-$(CONFIG_SC_MSS_7180) += mss-sc7180.o

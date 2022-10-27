@@ -35,4 +35,10 @@
 #define VIDEO_CC_MVS0C_CLK_ARES				5
 #define VIDEO_CC_MVS1C_CLK_ARES				6
 
+/* VIDEO_CC power domains */
+#define MVS0_GDSC				0
+#define MVS0C_GDSC				1
+#define MVS1_GDSC				2
+#define MVS1C_GDSC				3
+
 #endif
