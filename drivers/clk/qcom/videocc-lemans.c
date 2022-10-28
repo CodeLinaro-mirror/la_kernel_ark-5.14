@@ -29,7 +29,7 @@ enum {
 	DT_IFACE,
 	DT_BI_TCXO,
 	DT_BI_TCXO_AO,
-	DT_SLEEP_CLK
+	DT_SLEEP_CLK,
 };
 
 enum {

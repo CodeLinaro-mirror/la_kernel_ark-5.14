@@ -42,7 +42,7 @@ enum {
 static const struct clk_parent_data parent_data_tcxo = { .index = DT_BI_TCXO };
 
 static const struct pll_vco lucid_evo_vco[] = {
-	{ 249600000, 2000000000, 0 },
+	{ 249600000, 2020000000, 0 },
 };
 
 /* 810MHz configuration */
@@ -287,6 +287,19 @@ static struct clk_branch gpu_cc_ahb_clk = {
 	},
 };
 
+static struct clk_branch gpu_cc_cb_clk = {
+	.halt_reg = 0x93a4,
+	.halt_check = BRANCH_HALT,
+	.clkr = {
+		.enable_reg = 0x93a4,
+		.enable_mask = BIT(0),
+		.hw.init = &(const struct clk_init_data){
+			.name = "gpu_cc_cb_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
 static struct clk_branch gpu_cc_crc_ahb_clk = {
 	.halt_reg = 0x9120,
 	.halt_check = BRANCH_HALT_VOTED,
@@ -485,6 +498,7 @@ static struct clk_branch gpu_cc_sleep_clk = {
 
 static struct clk_regmap *gpu_cc_lemans_clocks[] = {
 	[GPU_CC_AHB_CLK] = &gpu_cc_ahb_clk.clkr,
+	[GPU_CC_CB_CLK] = &gpu_cc_cb_clk.clkr,
 	[GPU_CC_CRC_AHB_CLK] = &gpu_cc_crc_ahb_clk.clkr,
 	[GPU_CC_CX_FF_CLK] = &gpu_cc_cx_ff_clk.clkr,
 	[GPU_CC_CX_GMU_CLK] = &gpu_cc_cx_gmu_clk.clkr,
@@ -510,7 +524,7 @@ static struct clk_regmap *gpu_cc_lemans_clocks[] = {
 
 static struct gdsc cx_gdsc = {
 	.gdscr = 0x9108,
-	//.gds_hw_ctrl = 0x1540, //?
+	.gds_hw_ctrl = 0x953c,
 	.pd = {
 		.name = "cx_gdsc",
 	},
@@ -520,18 +534,29 @@ static struct gdsc cx_gdsc = {
 
 static struct gdsc gx_gdsc = {
 	.gdscr = 0x905c,
-	//.clamp_io_ctrl = 0x1508, //?
 	.pd = {
 		.name = "gx_gdsc",
 		.power_on = gdsc_gx_do_nothing_enable,
 	},
 	.pwrsts = PWRSTS_OFF_ON,
-	.flags = CLAMP_IO | RETAIN_FF_ENABLE,
+	.flags = RETAIN_FF_ENABLE,
 };
 
 static struct gdsc *gpu_cc_lemans_gdscs[] = {
 	[GPU_CC_CX_GDSC] = &cx_gdsc,
 	[GPU_CC_GX_GDSC] = &gx_gdsc,
+};
+
+static const struct qcom_reset_map gpu_cc_lemans_resets[] = {
+	[GPUCC_GPU_CC_ACD_BCR] = { 0x9358 },
+	[GPUCC_GPU_CC_CB_BCR] = { 0x93a0 },
+	[GPUCC_GPU_CC_CX_BCR] = { 0x9104 },
+	[GPUCC_GPU_CC_FAST_HUB_BCR] = { 0x93e4 },
+	[GPUCC_GPU_CC_FF_BCR] = { 0x9470 },
+	[GPUCC_GPU_CC_GFX3D_AON_BCR] = { 0x9198 },
+	[GPUCC_GPU_CC_GMU_BCR] = { 0x9314 },
+	[GPUCC_GPU_CC_GX_BCR] = { 0x9058 },
+	[GPUCC_GPU_CC_XO_BCR] = { 0x9000 },
 };
 
 static const struct regmap_config gpu_cc_lemans_regmap_config = {
@@ -546,6 +571,8 @@ static const struct qcom_cc_desc gpu_cc_lemans_desc = {
 	.config = &gpu_cc_lemans_regmap_config,
 	.clks = gpu_cc_lemans_clocks,
 	.num_clks = ARRAY_SIZE(gpu_cc_lemans_clocks),
+	.resets = gpu_cc_lemans_resets,
+	.num_resets = ARRAY_SIZE(gpu_cc_lemans_resets),
 	.gdscs = gpu_cc_lemans_gdscs,
 	.num_gdscs = ARRAY_SIZE(gpu_cc_lemans_gdscs),
 };

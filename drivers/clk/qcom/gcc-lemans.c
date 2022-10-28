@@ -4639,8 +4639,13 @@ static struct clk_regmap *gcc_lemans_clocks[] = {
 };
 
 static const struct qcom_reset_map gcc_lemans_resets[] = {
+	[GCC_CAMERA_BCR] = { 0x32000 },
+	[GCC_DISPLAY1_BCR] = { 0xc7000 },
+	[GCC_DISPLAY_BCR] = { 0x33000 },
 	[GCC_EMAC0_BCR] = { 0xb6000 },
 	[GCC_EMAC1_BCR] = { 0xb4000 },
+	[GCC_GPU_BCR] = { 0x7d000 },
+	[GCC_MMSS_BCR] = { 0x17000 },
 	[GCC_PCIE_0_BCR] = { 0xa9000 },
 	[GCC_PCIE_0_LINK_DOWN_BCR] = { 0xbf000 },
 	[GCC_PCIE_0_NOCSR_COM_PHY_BCR] = { 0xbf008 },
@@ -4651,7 +4656,13 @@ static const struct qcom_reset_map gcc_lemans_resets[] = {
 	[GCC_PCIE_1_NOCSR_COM_PHY_BCR] = { 0xae090 },
 	[GCC_PCIE_1_PHY_BCR] = { 0xae08c },
 	[GCC_PCIE_1_PHY_NOCSR_COM_PHY_BCR] = { 0xae094 },
+	[GCC_PDM_BCR] = { 0x3f000 },
+	[GCC_QUPV3_WRAPPER_0_BCR] = { 0x23000 },
+	[GCC_QUPV3_WRAPPER_1_BCR] = { 0x24000 },
+	[GCC_QUPV3_WRAPPER_2_BCR] = { 0x2a000 },
+	[GCC_QUPV3_WRAPPER_3_BCR] = { 0xc4000 },
 	[GCC_SDCC1_BCR] = { 0x20000 },
+	[GCC_TSCSS_BCR] = { 0x21000 },
 	[GCC_UFS_CARD_BCR] = { 0x81000 },
 	[GCC_UFS_PHY_BCR] = { 0x83000 },
 	[GCC_USB20_PRIM_BCR] = { 0x1c000 },
@@ -4717,7 +4728,7 @@ static const struct regmap_config gcc_lemans_regmap_config = {
 	.reg_bits = 32,
 	.reg_stride = 4,
 	.val_bits = 32,
-	.max_register = 0xc7018,
+	.max_register = 0x472cffc,
 	.fast_io = true,
 };
 
