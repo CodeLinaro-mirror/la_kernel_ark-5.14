@@ -7,6 +7,7 @@
 #include <dt-bindings/clock/qcom,gcc-lemans.h>
 #include <dt-bindings/interconnect/qcom,lemans.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/mailbox/qcom-ipcc.h>
 #include <dt-bindings/soc/qcom,rpmh-rsc.h>
 #include <dt-bindings/power/qcom-rpmpd.h>
 
@@ -206,6 +207,98 @@
 			required-opps = <&rpmhpd_opp_svs_l1>;
 		};
 	};
+
+	smp2p-adsp {
+		compatible = "qcom,smp2p";
+		qcom,smem = <443>, <429>;
+		interrupts-extended = <&ipcc IPCC_CLIENT_LPASS
+						IPCC_MPROC_SIGNAL_SMP2P
+						IRQ_TYPE_EDGE_RISING>;
+		mboxes = <&ipcc IPCC_CLIENT_LPASS
+			  IPCC_MPROC_SIGNAL_SMP2P>;
+		qcom,local-pid = <0>;
+		qcom,remote-pid = <2>;
+
+		smp2p_adsp_out: master-kernel {
+			qcom,entry-name = "master-kernel";
+			#qcom,smem-state-cells = <1>;
+		};
+
+		smp2p_adsp_in: slave-kernel {
+			qcom,entry-name = "slave-kernel";
+			interrupt-controller;
+			#interrupt-cells = <2>;
+		};
+	};
+
+	smp2p-nsp0 {
+		compatible = "qcom,smp2p";
+		qcom,smem = <94>, <432>;
+		interrupts-extended = <&ipcc IPCC_CLIENT_CDSP
+						IPCC_MPROC_SIGNAL_SMP2P
+						IRQ_TYPE_EDGE_RISING>;
+		mboxes = <&ipcc IPCC_CLIENT_CDSP IPCC_MPROC_SIGNAL_SMP2P>;
+		qcom,local-pid = <0>;
+		qcom,remote-pid = <5>;
+
+		smp2p_nsp0_out: master-kernel {
+			qcom,entry-name = "master-kernel";
+			#qcom,smem-state-cells = <1>;
+		};
+
+		smp2p_nsp0_in: slave-kernel {
+			qcom,entry-name = "slave-kernel";
+			interrupt-controller;
+			#interrupt-cells = <2>;
+		};
+	};
+
+	smp2p-gpdsp0 {
+		compatible = "qcom,smp2p";
+		qcom,smem = <617>, <616>;
+		interrupts-extended = <&ipcc IPCC_CLIENT_GPDSP0
+						IPCC_MPROC_SIGNAL_SMP2P
+						IRQ_TYPE_EDGE_RISING>;
+		mboxes = <&ipcc IPCC_CLIENT_GPDSP0
+			  IPCC_MPROC_SIGNAL_SMP2P>;
+		qcom,local-pid = <0>;
+		qcom,remote-pid = <17>;
+
+		smp2p_gpdsp0_out: master-kernel {
+			qcom,entry-name = "master-kernel";
+			#qcom,smem-state-cells = <1>;
+		};
+
+		smp2p_gpdsp0_in: slave-kernel {
+			qcom,entry-name = "slave-kernel";
+			interrupt-controller;
+			#interrupt-cells = <2>;
+		};
+	};
+
+	smp2p-gpdsp1 {
+		compatible = "qcom,smp2p";
+		qcom,smem = <617>, <616>;
+		interrupts-extended = <&ipcc IPCC_CLIENT_GPDSP1
+						IPCC_MPROC_SIGNAL_SMP2P
+						IRQ_TYPE_EDGE_RISING>;
+		mboxes = <&ipcc IPCC_CLIENT_GPDSP1
+			  IPCC_MPROC_SIGNAL_SMP2P>;
+		qcom,local-pid = <0>;
+		qcom,remote-pid = <18>;
+
+		smp2p_gpdsp1_out: master-kernel {
+			qcom,entry-name = "master-kernel";
+			#qcom,smem-state-cells = <1>;
+		};
+
+		smp2p_gpdsp1_in: slave-kernel {
+			qcom,entry-name = "slave-kernel";
+			interrupt-controller;
+			#interrupt-cells = <2>;
+		};
+	};
+
 };
 
 &firmware {
@@ -261,8 +354,10 @@
 	};
 
 	smem_mem: smem_region@90900000 {
-		no-map;
+		compatible = "qcom,smem";
 		reg = <0x0 0x90900000 0x0 0x200000>;
+		no-map;
+		hwlocks = <&tcsr_mutex 3>;
 	};
 
 	cpucp_fw_mem: cpucp_fw_region@90b00000 {
@@ -477,6 +572,15 @@
 		#clock-cells = <1>;
 		#reset-cells = <1>;
 		#power-domain-cells = <1>;
+	};
+
+	ipcc: mailbox@408000 {
+		compatible = "qcom,lemans-ipcc", "qcom,ipcc";
+		reg = <0x408000 0x1000>;
+		interrupts = <GIC_SPI 229 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		#mbox-cells = <2>;
 	};
 
 	aggre1_noc:interconnect-aggre1-noc {
@@ -749,6 +853,12 @@
 		};
 	};
 
+	tcsr_mutex: hwlock@1f40000 {
+		compatible = "qcom,tcsr-mutex";
+		reg = <0x1f40000 0x20000>;
+		#hwlock-cells = <1>;
+	};
+
 	cpufreq_hw: cpufreq@18591000 {
 		compatible = "qcom,lemans-cpufreq-epss", "qcom,cpufreq-epss";
 		reg = <0x18591000 0x1000>, <0x18593000 0x1000>;
@@ -758,6 +868,14 @@
 		clock-names = "xo", "alternate";
 
 		#freq-domain-cells = <1>;
+	};
+
+	aoss_qmp: power-controller@c300000 {
+		compatible = "qcom,lemans-aoss-qmp", "qcom,aoss-qmp";
+		reg = <0xc300000 0x400>;
+		mboxes = <&ipcc IPCC_CLIENT_AOP IPCC_MPROC_SIGNAL_GLINK_QMP>;
+		interrupts-extended = <&ipcc IPCC_CLIENT_AOP IPCC_MPROC_SIGNAL_GLINK_QMP IRQ_TYPE_EDGE_RISING>;
+		#clock-cells = <0>;
 	};
 
 	ufs_mem_hc: ufs@1d84000 {
