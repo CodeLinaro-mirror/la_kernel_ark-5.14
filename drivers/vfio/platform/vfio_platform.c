@@ -15,7 +15,7 @@
 #define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
 #define DRIVER_DESC     "VFIO for platform devices - User Level meta-driver"
 
-static bool reset_required = true;
+static bool reset_required = false;
 module_param(reset_required, bool, 0444);
 MODULE_PARM_DESC(reset_required, "override reset requirement (default: 1)");
 
@@ -70,11 +70,17 @@ static int vfio_platform_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id qcom_vfio_platform_of_match[] = {
+	{ .compatible = "qcom,vfio-platform"},
+	{ }
+};
+
 static struct platform_driver vfio_platform_driver = {
 	.probe		= vfio_platform_probe,
 	.remove		= vfio_platform_remove,
 	.driver	= {
 		.name	= "vfio-platform",
+		.of_match_table = qcom_vfio_platform_of_match,
 	},
 };
 
