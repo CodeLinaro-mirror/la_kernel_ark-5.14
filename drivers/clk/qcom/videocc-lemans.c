@@ -305,7 +305,7 @@ static struct clk_branch video_cc_mvs0_clk = {
 				&video_cc_mvs0_div_clk_src.clkr.hw,
 			},
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -323,7 +323,7 @@ static struct clk_branch video_cc_mvs0c_clk = {
 				&video_cc_mvs0c_div2_div_clk_src.clkr.hw,
 			},
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -343,7 +343,7 @@ static struct clk_branch video_cc_mvs1_clk = {
 				&video_cc_mvs1_div_clk_src.clkr.hw,
 			},
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -361,7 +361,7 @@ static struct clk_branch video_cc_mvs1c_clk = {
 				&video_cc_mvs1c_div2_div_clk_src.clkr.hw,
 			},
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -379,7 +379,7 @@ static struct clk_branch video_cc_sleep_clk = {
 				&video_cc_sleep_clk_src.clkr.hw,
 			},
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -391,7 +391,7 @@ static struct gdsc mvs0_gdsc = {
 		.name = "mvs0_gdsc",
 	},
 	.pwrsts = PWRSTS_OFF_ON,
-	.flags = HW_CTRL | RETAIN_FF_ENABLE,
+	.flags = RETAIN_FF_ENABLE | ALWAYS_ON,
 };
 
 static struct gdsc mvs0c_gdsc = {
@@ -399,7 +399,7 @@ static struct gdsc mvs0c_gdsc = {
 	.pd = {
 		.name = "mvs0c_gdsc",
 	},
-	.flags = RETAIN_FF_ENABLE,
+	.flags = RETAIN_FF_ENABLE | ALWAYS_ON,
 	.pwrsts = PWRSTS_OFF_ON,
 };
 
@@ -409,7 +409,7 @@ static struct gdsc mvs1_gdsc = {
 		.name = "mvs1_gdsc",
 	},
 	.pwrsts = PWRSTS_OFF_ON,
-	.flags = HW_CTRL | RETAIN_FF_ENABLE,
+	.flags = RETAIN_FF_ENABLE | ALWAYS_ON,
 };
 
 static struct gdsc mvs1c_gdsc = {
@@ -417,7 +417,7 @@ static struct gdsc mvs1c_gdsc = {
 	.pd = {
 		.name = "mvs1c_gdsc",
 	},
-	.flags = RETAIN_FF_ENABLE,
+	.flags = RETAIN_FF_ENABLE | ALWAYS_ON,
 	.pwrsts = PWRSTS_OFF_ON,
 };
 
