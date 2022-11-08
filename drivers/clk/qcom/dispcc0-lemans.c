@@ -1297,7 +1297,7 @@ static struct clk_branch mdss_0_disp_cc_sleep_clk = {
 static struct gdsc mdss_core_gdsc = {
 	.gdscr = 0x9000,
 	.pd = {
-		.name = "mdss_core_gdsc",
+		.name = "mdss0_core_gdsc",
 	},
 	.pwrsts = PWRSTS_OFF_ON,
 	.flags = RETAIN_FF_ENABLE | ALWAYS_ON,
@@ -1306,7 +1306,7 @@ static struct gdsc mdss_core_gdsc = {
 static struct gdsc mdss_core_int2_gdsc = {
 	.gdscr = 0xd000,
 	.pd = {
-		.name = "mdss_core_int2_gdsc",
+		.name = "mdss0_core_int2_gdsc",
 	},
 	.pwrsts = PWRSTS_OFF_ON,
 	.flags = RETAIN_FF_ENABLE | ALWAYS_ON,
