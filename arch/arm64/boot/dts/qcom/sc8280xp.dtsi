@@ -2216,6 +2216,30 @@
 			interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
+		vfio_multi_timer@0 {
+			compatible = "qcom,vfio-platform";
+			interrupts = <GIC_SPI 9 IRQ_TYPE_LEVEL_HIGH>,
+							<GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>;
+			reg = <0x0 0x17c23000 0x0 0x1000> ,
+					<0x0 0x17c25000 0x0 0x1000>;
+			iommus = <&apps_smmu 0x0 0x0>;
+		};
+
+
+		vfio_timer@17c23000 {
+			compatible = "qcom,vfio-platform";
+			interrupts = <GIC_SPI 9 IRQ_TYPE_LEVEL_HIGH>;
+			reg = <0x0 0x17c23000 0x0 0x1000>;
+			iommus = <&apps_smmu 0x0 0x0>;
+		};
+
+		vfio_timer1@17c25000 {
+			compatible = "qcom,vfio-platform";
+			interrupts = <GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>;
+			reg = <0x0 0x17c25000 0x0 0x1000>;
+			iommus = <&apps_smmu 0x1 0x0>;
+		};
+
 		timer@17c20000 {
 			compatible = "arm,armv7-timer-mem";
 			reg = <0x0 0x17c20000 0x0 0x1000>;
