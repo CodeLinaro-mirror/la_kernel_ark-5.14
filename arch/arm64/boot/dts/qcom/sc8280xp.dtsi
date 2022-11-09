@@ -2048,6 +2048,35 @@
 				drive-strength = <6>;
 				bias-disable;
 			};
+
+			cci0_default: cci0_default {
+				mux {
+					/* CLK, DATA */
+					pins = "gpio113","gpio114";
+					function = "cci_i2c";
+				};
+
+				config {
+					pins = "gpio113","gpio114";
+					bias-pull-up; /* PULL UP*/
+					drive-strength = <2>; /* 2 MA */
+				};
+			};
+
+			cci1_default: cci1_default {
+				mux {
+					/* CLK, DATA */
+					pins = "gpio115","gpio116";
+					function = "cci_i2c";
+				};
+
+				config {
+					pins = "gpio115","gpio116";
+					bias-pull-up; /* PULL UP*/
+					drive-strength = <2>; /* 2 MA */
+				};
+			};
+
 		};
 
 		apps_smmu: iommu@15000000 {
@@ -2631,6 +2660,18 @@
 				label = "nsp1";
 				qcom,remote-pid = <12>;
 			};
+		};
+
+		vfio_cci0@0 {
+			compatible = "qcom,cci-pinctlr";
+			pinctrl-names = "default";
+			pinctrl-0 = <&cci0_default>;
+		};
+
+		vfio_cci1@1 {
+			compatible = "qcom,cci-pinctlr";
+			pinctrl-names = "default";
+			pinctrl-0 = <&cci1_default>;
 		};
 	};
 
