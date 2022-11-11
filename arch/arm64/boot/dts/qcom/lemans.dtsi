@@ -556,7 +556,6 @@
 				 <&rpmhcc RPMH_CXO_CLK>,
 				 <&gcc GCC_GPU_GPLL0_CLK_SRC>,
 				 <&gcc GCC_GPU_GPLL0_DIV_CLK_SRC>;
-		power-domains = <&rpmhpd LEMANS_MMCX>;
 		#clock-cells = <1>;
 		#reset-cells = <1>;
 		#power-domain-cells = <1>;
