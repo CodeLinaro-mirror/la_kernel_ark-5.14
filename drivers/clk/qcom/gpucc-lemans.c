@@ -544,7 +544,7 @@ static struct gdsc gx_gdsc = {
 		.power_on = gdsc_gx_do_nothing_enable,
 	},
 	.pwrsts = PWRSTS_OFF_ON,
-	.flags = RETAIN_FF_ENABLE | ALWAYS_ON,
+	.flags = AON_RESET| RETAIN_FF_ENABLE,
 };
 
 static struct gdsc *gpu_cc_lemans_gdscs[] = {
