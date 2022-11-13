@@ -42,6 +42,8 @@
 
 #include "arm-smmu.h"
 
+#define CREATE_TRACE_POINTS
+#include "arm-smmu-trace.h"
 /*
  * Apparently, some Qualcomm arm64 platforms which appear to expose their SMMU
  * global register space are still, in fact, using a hypervisor to mediate it
@@ -1211,6 +1213,9 @@ static int arm_smmu_map_pages(struct iommu_domain *domain, unsigned long iova,
 	ret = ops->map_pages(ops, iova, paddr, pgsize, pgcount, prot, gfp, mapped);
 	arm_smmu_rpm_put(smmu);
 
+	if (!ret)
+		trace_map_pages(to_smmu_domain(domain), iova, pgsize, pgcount);
+
 	return ret;
 }
 
@@ -1228,7 +1233,8 @@ static size_t arm_smmu_unmap_pages(struct iommu_domain *domain, unsigned long io
 	arm_smmu_rpm_get(smmu);
 	ret = ops->unmap_pages(ops, iova, pgsize, pgcount, iotlb_gather);
 	arm_smmu_rpm_put(smmu);
-
+	if (ret)
+		trace_unmap_pages(to_smmu_domain(domain), iova, pgsize, pgcount);
 	return ret;
 }
 
