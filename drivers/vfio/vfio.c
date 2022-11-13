@@ -1061,6 +1061,7 @@ static long vfio_ioctl_set_iommu(struct vfio_container *container,
 	 */
 	if (list_empty(&container->group_list) || container->iommu_driver) {
 		up_write(&container->group_lock);
+		pr_err("%s: list_empty(&container->group_list):%d \n", __func__, list_empty(&container->group_list));
 		return -EINVAL;
 	}
 
@@ -1337,9 +1338,15 @@ static int vfio_group_get_device_fd(struct vfio_group *group, char *buf)
 	int fdno;
 	int ret = 0;
 
-	if (0 == atomic_read(&group->container_users) ||
-	    !group->container->iommu_driver || !vfio_group_viable(group))
-		return -EINVAL;
+	if (0 == atomic_read(&group->container_users))
+		pr_err("%s: 0 == atomic_read(&group->container_users)\n", __func__);
+	else if( !group->container->iommu_driver)
+		pr_err("%s: !group->container->iommu_driver\n", __func__);
+	else if(!vfio_group_viable(group))
+		{
+			pr_err("%s: (!vfio_group_viable(group))\n", __func__);
+			//return -EINVAL;
+		}
 
 	if (group->type == VFIO_NO_IOMMU && !capable(CAP_SYS_RAWIO))
 		return -EPERM;

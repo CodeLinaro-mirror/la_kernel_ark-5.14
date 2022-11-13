@@ -234,6 +234,7 @@ config QCOM_COINCELL
 config KIUMD
 	tristate "QCOM_KIUMD"
 	depends on ARCH_QCOM
+        default m
 	help
 	  This driver VFIO based kernel interface for user mode drivers to map DMA-BUF
 	  to device SMMU
@@ -241,6 +242,7 @@ config KIUMD
 config VFIO_IOMMU_QCOM
 	tristate "VFIO_IOMMU_QCOM"
 	depends on ARCH_QCOM && VFIO
+        default m
 	help
 	 This driver enables a VFIO IOMMU implementation for a VFIO
 	 prototype
