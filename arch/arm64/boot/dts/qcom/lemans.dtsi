@@ -29,6 +29,14 @@
 	chosen { };
 
 	soc: soc { };
+        qcom_tzlog: tz-log@146AA720 {
+                compatible = "qcom,tz-log";
+                reg = <0x146AA720 0x3000>;
+                qcom,hyplog-enabled;
+                hyplog-address-offset = <0x410>;
+                hyplog-size-offset = <0x414>;
+        };
+
 
 	firmware: firmware { };
 
