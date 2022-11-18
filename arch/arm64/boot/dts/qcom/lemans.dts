@@ -14,6 +14,17 @@
 	model = "Qualcomm Technologies, Inc. Lemans SoC";
 	compatible = "qcom,lemans";
 	qcom,board-id = <0x10019 0>;
+
+	aliases {
+		serial0 = &uart10;
+		ufshc1  = &ufs_mem_hc;
+		i2c18   = &i2c18;
+		spi16   = &spi16;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
 };
 
 &apps_rsc {
@@ -209,6 +220,41 @@
 			regulator-allow-set-load;
 		};
 	};
+};
+
+&qupv3_id_0 {
+	status = "okay";
+};
+
+&qupv3_id_1 {
+	status = "okay";
+};
+
+&qupv3_id_2 {
+	status = "okay";
+};
+
+&qupv3_id_3 {
+	status = "okay";
+};
+
+&uart10 {
+	compatible = "qcom,geni-debug-uart";
+	status = "okay";
+};
+
+&spi16 {
+	status = "okay";
+
+	spidevmaster@0 {
+		compatible = "qcom,spidev";
+		reg = <0>;
+		status = "okay";
+	};
+};
+
+&i2c18 {
+	status = "okay";
 };
 
 &ufs_mem_hc {
