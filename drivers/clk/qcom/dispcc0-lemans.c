@@ -1421,6 +1421,7 @@ MODULE_DEVICE_TABLE(of, disp_cc_0_lemans_match_table);
 static int disp_cc_0_lemans_probe(struct platform_device *pdev)
 {
 	struct regmap *regmap;
+	int ret;
 
 	regmap = qcom_cc_map(pdev, &disp_cc_0_lemans_desc);
 	if (IS_ERR(regmap))
@@ -1435,7 +1436,14 @@ static int disp_cc_0_lemans_probe(struct platform_device *pdev)
 	 */
 	regmap_update_bits(regmap, 0xc054, BIT(0), BIT(0));
 
-	return qcom_cc_really_probe(pdev, &disp_cc_0_lemans_desc, regmap);
+	//return qcom_cc_really_probe(pdev, &disp_cc_0_lemans_desc, regmap);
+	ret = qcom_cc_really_probe(pdev, &disp_cc_0_lemans_desc, regmap);
+	clk_set_rate(mdss_0_disp_cc_mdss_ahb_clk.clkr.hw.clk, 75000000);
+	clk_set_rate(mdss_0_disp_cc_mdss_ahb1_clk.clkr.hw.clk, 75000000);
+	clk_set_rate(mdss_0_disp_cc_mdss_mdp_clk.clkr.hw.clk, 500000000);
+	clk_set_rate(mdss_0_disp_cc_mdss_mdp1_clk.clkr.hw.clk, 500000000);
+
+	return ret;
 }
 
 static struct platform_driver disp_cc_0_lemans_driver = {
