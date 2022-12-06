@@ -52,4 +52,5 @@ struct qcom_ethqos {
 int ethqos_init_reqgulators(struct qcom_ethqos *ethqos);
 void ethqos_disable_regulators(struct qcom_ethqos *ethqos);
 int ethqos_init_gpio(struct qcom_ethqos *ethqos);
+void *qcom_ethqos_get_priv(struct qcom_ethqos *ethqos);
 #endif

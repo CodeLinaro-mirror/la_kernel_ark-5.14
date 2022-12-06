@@ -259,6 +259,8 @@ static int ethqos_dll_configure(struct qcom_ethqos *ethqos)
 
 static int ethqos_rgmii_macro_init(struct qcom_ethqos *ethqos)
 {
+	struct stmmac_priv *priv = qcom_ethqos_get_priv(ethqos);
+
 	/* Disable loopback mode */
 	rgmii_updatel(ethqos, RGMII_CONFIG2_TX_TO_RX_LOOPBACK_EN,
 		      0, RGMII_IO_MACRO_CONFIG2);
@@ -280,9 +282,17 @@ static int ethqos_rgmii_macro_init(struct qcom_ethqos *ethqos)
 			      RGMII_CONFIG_PROG_SWAP, RGMII_IO_MACRO_CONFIG);
 		rgmii_updatel(ethqos, RGMII_CONFIG2_DATA_DIVIDE_CLK_SEL,
 			      0, RGMII_IO_MACRO_CONFIG2);
-		rgmii_updatel(ethqos, RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
-			      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
-			      RGMII_IO_MACRO_CONFIG2);
+
+		if (priv->plat->mac2mac_88Q5072)
+			rgmii_updatel(ethqos,
+				      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
+				      0, RGMII_IO_MACRO_CONFIG2);
+		else
+			rgmii_updatel(ethqos,
+				      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
+				      RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN,
+				      RGMII_IO_MACRO_CONFIG2);
+
 		rgmii_updatel(ethqos, RGMII_CONFIG2_RSVD_CONFIG15,
 			      0, RGMII_IO_MACRO_CONFIG2);
 		rgmii_updatel(ethqos, RGMII_CONFIG2_RX_PROG_SWAP,
@@ -501,7 +511,7 @@ static void ethqos_fix_mac_speed(void *priv, unsigned int speed)
 }
 
 static const struct of_device_id qcom_ethqos_match[] = {
-	{ .compatible = "qcom,stmmac-ethqos", },
+	{ .compatible = "qcom,stmmac-ethqos-emac1", },
 	{ .compatible = "qcom,emac-smmu-embedded", },
 	{ }
 };
@@ -543,6 +553,15 @@ static int emac_emb_smmu_cb_probe(struct platform_device *pdev,
 smmu_probe_done:
 	emac_emb_smmu_ctx.ret = result;
 	return result;
+}
+
+inline void *qcom_ethqos_get_priv(struct qcom_ethqos *ethqos)
+{
+	struct platform_device *pdev = ethqos->pdev;
+	struct net_device *dev = platform_get_drvdata(pdev);
+	struct stmmac_priv *priv = netdev_priv(dev);
+
+	return priv;
 }
 
 static int qcom_ethqos_probe(struct platform_device *pdev)
@@ -614,6 +633,8 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	else
 		ETHQOSINFO("mac2mac rgmii speed = %d\n",
 			   plat_dat->mac2mac_rgmii_speed);
+	plat_dat->mac2mac_88Q5072 =
+		of_property_read_bool(np, "mac2mac-88Q5072");
 
 	if (of_property_read_bool(pdev->dev.of_node,
 				  "emac-core-version")) {
