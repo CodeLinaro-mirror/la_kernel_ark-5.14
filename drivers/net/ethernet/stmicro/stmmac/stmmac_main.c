@@ -1023,6 +1023,14 @@ static void stmmac_validate(struct phylink_config *config,
 	/* If PCS is supported, check which modes it supports. */
 	if (priv->hw->xpcs)
 		xpcs_validate(priv->hw->xpcs, supported, state);
+
+	if (priv->plat->phy_fixed_link) {
+		state->link = 1;
+		state->duplex = DUPLEX_FULL;
+		state->speed = SPEED_1000;
+		if (priv->phydev)
+			priv->phydev->autoneg = AUTONEG_DISABLE;
+	}
 }
 
 static void stmmac_mac_config(struct phylink_config *config, unsigned int mode,
@@ -1204,6 +1212,7 @@ static int stmmac_init_phy(struct net_device *dev)
 {
 	struct stmmac_priv *priv = netdev_priv(dev);
 	struct device_node *node;
+	int phy_id = 0;
 	int ret;
 
 	node = priv->plat->phylink_node;
@@ -1221,6 +1230,19 @@ static int stmmac_init_phy(struct net_device *dev)
 		if (!priv->phydev) {
 			netdev_err(priv->dev, "no phy at addr %d\n", addr);
 			return -ENODEV;
+		}
+
+		phy_id = priv->phydev->phy_id & priv->phydev->drv->phy_id_mask;
+		if (phy_id == MARVEL_PHY_ID && !priv->plat->phy_intr_en) {
+			pr_info(" %s phy_id = %#x, phy_id_mask = %#x\n",
+				__func__, priv->phydev->phy_id,
+				priv->phydev->drv->phy_id_mask);
+			ret = priv->plat->phy_intr_enable(priv);
+			if (ret)
+				pr_err("%s: Unable to enable PHY interrupt\n",
+				       __func__);
+			else
+				priv->plat->phy_intr_en = true;
 		}
 
 		if (priv->plat->phy_intr_en_extn_stm &&
