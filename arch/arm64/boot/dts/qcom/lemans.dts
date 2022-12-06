@@ -303,3 +303,37 @@
 &xo_board_clk {
 	clock-frequency = <38400000>;
 };
+
+&tlmm {
+	emac {
+		emac_mdc: emac_mdc {
+			mux {
+				pins = "gpio8";
+				function = "emac0_mdc";
+			};
+
+			config {
+				pins = "gpio8";
+				bias-pull-up;
+				drive-strength = <16>;
+			};
+		};
+
+		emac_mdio: emac_mdio {
+			mux {
+				pins = "gpio9";
+				function = "emac0_mdio";
+			};
+
+			config {
+				pins = "gpio9";
+				bias-pull-up;
+				drive-strength = <16>;
+			};
+		};
+	};
+};
+
+&ethqos_hw {
+	snps,reset-gpios = <&pm8775_3_gpios 8 GPIO_ACTIVE_HIGH>;
+};
