@@ -1231,6 +1231,10 @@ static int m88ea1512_config_init(struct phy_device *phydev)
 {
 	int err = 0;
 
+	/* SGMII-to-Copper mode initialization */
+	if (phydev->interface == PHY_INTERFACE_MODE_SGMII)
+		return m88e1510_config_init(phydev);
+
 	/* RGMII-to-1000BASE-X mode initialization */
 	if (phy_interface_is_rgmii(phydev)) {
 		err = m88ea1512_config_rgmii_tx_delays(phydev);
@@ -3228,9 +3232,10 @@ static struct phy_driver marvell_drivers[] = {
 		.features = PHY_GBIT_FIBRE_FEATURES,
 		.probe = marvell_probe,
 		.config_init = &m88ea1512_config_init,
-		.config_aneg = &marvell_config_aneg,
+		.config_aneg = &m88e1510_config_aneg,
 		.read_status = &marvell_read_status,
 		.config_intr = &marvell_config_intr,
+		.handle_interrupt = marvell_handle_interrupt,
 		.get_wol = &m88e1318_get_wol,
 		.set_wol = &m88e1318_set_wol,
 		.resume = &genphy_resume,
