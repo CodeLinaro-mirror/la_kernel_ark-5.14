@@ -23,6 +23,8 @@
 #define EMAC_HW_NONE 0
 
 #define ETHQOS_CONFIG_PPSOUT_CMD 44
+#define ETHQOS_AVB_ALGORITHM 27
+
 #define MAC_PPS_CONTROL			0x00000b70
 #define PPS_MAXIDX(x)			((((x) + 1) * 8) - 1)
 #define PPS_MINIDX(x)			((x) * 8)
@@ -154,4 +156,54 @@ void ethqos_remove_pps_dev(struct qcom_ethqos *ethqos);
 int ppsout_config(struct stmmac_priv *priv, struct pps_cfg *eth_pps_cfg);
 int ethqos_init_pps(void *priv_n);
 struct qcom_ethqos *get_pethqos(void);
+
+#define QTAG_VLAN_ETH_TYPE_OFFSET 16
+#define QTAG_UCP_FIELD_OFFSET 14
+#define QTAG_ETH_TYPE_OFFSET 12
+#define PTP_UDP_EV_PORT 0x013F
+#define PTP_UDP_GEN_PORT 0x0140
+
+#define IPA_DMA_TX_CH 0
+#define IPA_DMA_RX_CH 0
+
+#define VLAN_TAG_UCP_SHIFT 13
+#define CLASS_A_TRAFFIC_UCP 3
+#define CLASS_A_TRAFFIC_TX_CHANNEL 3
+
+#define CLASS_B_TRAFFIC_UCP 2
+#define CLASS_B_TRAFFIC_TX_CHANNEL 2
+
+#define NON_TAGGED_IP_TRAFFIC_TX_CHANNEL 1
+#define ALL_OTHER_TRAFFIC_TX_CHANNEL 1
+#define ALL_OTHER_TX_TRAFFIC_IPA_DISABLED 0
+
+#define DEFAULT_INT_MOD 1
+#define AVB_INT_MOD 8
+#define IP_PKT_INT_MOD 32
+#define PTP_INT_MOD 1
+
+enum dwmac_qcom_queue_operating_mode {
+	DWMAC_QCOM_QDISABLED = 0X0,
+	DWMAC_QCOM_QAVB,
+	DWMAC_QCOM_QDCB,
+	DWMAC_QCOM_QGENERIC
+};
+
+struct dwmac_qcom_avb_algorithm_params {
+	unsigned int idle_slope;
+	unsigned int send_slope;
+	unsigned int hi_credit;
+	unsigned int low_credit;
+};
+
+struct dwmac_qcom_avb_algorithm {
+	unsigned int qinx;
+	unsigned int algorithm;
+	unsigned int cc;
+	struct dwmac_qcom_avb_algorithm_params speed100params;
+	struct dwmac_qcom_avb_algorithm_params speed1000params;
+	enum dwmac_qcom_queue_operating_mode op_mode;
+};
+
+unsigned int dwmac_qcom_get_plat_tx_coal_frames(struct sk_buff *skb);
 #endif
