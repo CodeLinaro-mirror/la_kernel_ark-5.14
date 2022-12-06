@@ -5736,7 +5736,7 @@ static void stmmac_common_interrupt(struct stmmac_priv *priv)
 		}
 
 		/* PCS link status */
-		if (priv->hw->pcs) {
+		if (priv->hw->pcs && priv->hw->pcs != STMMAC_PCS_SGMII) {
 			if (priv->xstats.pcs_link)
 				netif_carrier_on(priv->dev);
 			else
