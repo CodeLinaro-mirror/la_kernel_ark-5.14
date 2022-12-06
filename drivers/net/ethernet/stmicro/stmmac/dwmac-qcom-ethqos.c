@@ -551,6 +551,8 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	struct stmmac_resources stmmac_res;
 	struct qcom_ethqos *ethqos = NULL;
 	int ret;
+	struct net_device *ndev;
+	struct stmmac_priv *priv;
 
 	if (of_device_is_compatible(pdev->dev.of_node,
 				    "qcom,emac-smmu-embedded"))
@@ -605,6 +607,14 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	plat_dat->pmt = 1;
 	plat_dat->tso_en = of_property_read_bool(np, "snps,tso");
 
+	/* Get rgmii interface speed for mac2c from device tree */
+	if (of_property_read_u32(np, "mac2mac-rgmii-speed",
+				 &plat_dat->mac2mac_rgmii_speed))
+		plat_dat->mac2mac_rgmii_speed = -1;
+	else
+		ETHQOSINFO("mac2mac rgmii speed = %d\n",
+			   plat_dat->mac2mac_rgmii_speed);
+
 	if (of_property_read_bool(pdev->dev.of_node,
 				  "emac-core-version")) {
 		/* Read emac core version value from dtsi */
@@ -642,8 +652,14 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		goto err_clk;
 
 	rgmii_dump(ethqos);
-
 	qcom_ethqos_read_iomacro_por_values(ethqos);
+
+	ndev = dev_get_drvdata(&ethqos->pdev->dev);
+	priv = netdev_priv(ndev);
+
+	if (priv->plat->mac2mac_en)
+		priv->plat->mac2mac_link = 0;
+
 	return ret;
 
 err_clk:

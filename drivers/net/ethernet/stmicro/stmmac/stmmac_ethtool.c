@@ -285,6 +285,13 @@ static int stmmac_ethtool_get_link_ksettings(struct net_device *dev,
 					     struct ethtool_link_ksettings *cmd)
 {
 	struct stmmac_priv *priv = netdev_priv(dev);
+	struct phy_device *phy = dev->phydev;
+
+	if (!phy)
+		return -ENODEV;
+
+	if (!netif_running(dev))
+		return -EBUSY;
 
 	if (priv->hw->pcs & STMMAC_PCS_RGMII ||
 	    priv->hw->pcs & STMMAC_PCS_SGMII) {
@@ -371,6 +378,13 @@ stmmac_ethtool_set_link_ksettings(struct net_device *dev,
 				  const struct ethtool_link_ksettings *cmd)
 {
 	struct stmmac_priv *priv = netdev_priv(dev);
+	struct phy_device *phy = dev->phydev;
+
+	if (!phy) {
+		pr_err("%s: %s: PHY is not registered\n",
+		       __func__, dev->name);
+		return -ENODEV;
+	}
 
 	if (priv->hw->pcs & STMMAC_PCS_RGMII ||
 	    priv->hw->pcs & STMMAC_PCS_SGMII) {
@@ -503,6 +517,14 @@ stmmac_set_pauseparam(struct net_device *netdev,
 {
 	struct stmmac_priv *priv = netdev_priv(netdev);
 	struct rgmii_adv adv_lp;
+
+	struct phy_device *phy = netdev->phydev;
+
+	if (!phy) {
+		pr_err("%s: %s: PHY is not registered\n",
+		       __func__, netdev->name);
+		return -ENODEV;
+	}
 
 	if (priv->hw->pcs && !stmmac_pcs_get_adv_lp(priv, priv->ioaddr, &adv_lp)) {
 		pause->autoneg = 1;
