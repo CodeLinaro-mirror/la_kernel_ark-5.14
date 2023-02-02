@@ -320,7 +320,7 @@ dist-git-version-check:
 	fi
 
 dist-buildreq-check: setup-source
-	@PKGLIST="rpm-build $(rpmspec -q --buildrequires $(SOURCES)/$(SPECFILE) | cut -d ' ' -f 1)"; \
+	@PKGLIST=$(rpmspec -q --buildrequires $(SOURCES)/$(SPECFILE) | cut -d ' ' -f 1); \
 	MISSING=""; \
 	for pkg in $$PKGLIST; do \
 		rpm -q --whatprovides $$pkg >/dev/null || MISSING="$$MISSING $$pkg"; \

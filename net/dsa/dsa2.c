@@ -742,8 +742,9 @@ static int dsa_switch_setup(struct dsa_switch *ds)
 	err = dsa_switch_setup_tag_protocol(ds);
 	if (err)
 		goto teardown;
-
+	/* Revisit if we need this internally
 	devlink_params_publish(ds->devlink);
+	*/
 
 	if (!ds->slave_mii_bus && ds->ops->phy_read) {
 		ds->slave_mii_bus = devm_mdiobus_alloc(ds->dev);

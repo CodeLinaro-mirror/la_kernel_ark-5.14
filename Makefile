@@ -26,7 +26,7 @@ __all:
 
 # Set RHEL variables
 # Use this spot to avoid future merge conflicts
-include Makefile.rhelver
+#include Makefile.rhelver
 
 # We are using a recursive build, so we need to do a little thinking
 # to get the ordering right.
