@@ -39,7 +39,8 @@ enum qcom_scm_arg_types {
 
 #define QCOM_SCM_ARGS(...) QCOM_SCM_ARGS_IMPL(__VA_ARGS__, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
-int qcom_scm_wait_for_wq_completion(u32 wq_ctx);
+struct qcom_scm;
+int qcom_scm_wait_for_wq_completion(struct qcom_scm *scm, u32 wq_ctx);
 int scm_get_wq_ctx(u32 *wq_ctx, u32 *flags, u32 *more_pending);
 
 #define SCM_SMC_FNID(s, c)	((((s) & 0xFF) << 8) | ((c) & 0xFF))
