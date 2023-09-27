@@ -41,6 +41,7 @@ enum qcom_scm_arg_types {
 
 struct qcom_scm;
 int qcom_scm_wait_for_wq_completion(struct qcom_scm *scm, u32 wq_ctx);
+int qcom_scm_waitq_wakeup(struct qcom_scm *scm, unsigned int wq_ctx);
 int scm_get_wq_ctx(u32 *wq_ctx, u32 *flags, u32 *more_pending);
 
 #define SCM_SMC_FNID(s, c)	((((s) & 0xFF) << 8) | ((c) & 0xFF))
@@ -65,6 +66,7 @@ int scm_legacy_call(struct device *dev, const struct qcom_scm_desc *desc,
 #define QCOM_SCM_ERROR		-1
 #define QCOM_SCM_INTERRUPTED	1
 #define QCOM_SCM_WAITQ_SLEEP	2
+#define QCOM_SCM_WAITQ_WAKE	3
 
 static inline int qcom_scm_remap_error(int err)
 {
