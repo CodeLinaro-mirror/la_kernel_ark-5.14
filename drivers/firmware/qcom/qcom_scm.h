@@ -43,6 +43,8 @@ struct qcom_scm;
 int qcom_scm_wait_for_wq_completion(struct qcom_scm *scm, u32 wq_ctx);
 int qcom_scm_waitq_wakeup(struct qcom_scm *scm, unsigned int wq_ctx);
 int scm_get_wq_ctx(u32 *wq_ctx, u32 *flags, u32 *more_pending);
+bool qcom_scm_multi_call_allow(struct device *dev, bool multicall_allowed);
+bool fw_supports_skip_mutex(struct device *dev);
 
 #define SCM_SMC_FNID(s, c)	((((s) & 0xFF) << 8) | ((c) & 0xFF))
 int __scm_smc_call(struct device *dev, const struct qcom_scm_desc *desc,
