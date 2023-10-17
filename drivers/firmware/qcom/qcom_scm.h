@@ -6,6 +6,8 @@
 
 #include <linux/firmware/qcom/qcom_scm.h>
 
+struct device;
+
 enum qcom_scm_convention {
 	SMC_CONVENTION_UNKNOWN,
 	SMC_CONVENTION_LEGACY,
