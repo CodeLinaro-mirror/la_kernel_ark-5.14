@@ -697,6 +697,27 @@
 			bias-pull-up;
 		};
 	};
+
+	pcie_ep_clkreq_default: pcie-ep-clkreq-default-state {
+		pins = "gpio3";
+		function = "pcie1_clkreq";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	pcie_ep_perst_default: pcie-ep-perst-default-state {
+		pins = "gpio4";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
+	pcie_ep_wake_default: pcie-ep-wake-default-state {
+		pins = "gpio5";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
 };
 
 &pcie0 {
@@ -717,6 +738,17 @@
 	pinctrl-0 = <&pcie1_default_state>;
 
 	status = "okay";
+};
+
+&pcie1_ep {
+	#dma-cells = <1>;
+	dmas = <&pcie1_ep 0>, <&pcie1_ep 1>;
+	dma-names = "rx", "tx";
+	reset-gpio = <&tlmm 4 GPIO_ACTIVE_LOW>;
+	wake-gpios = <&tlmm 5 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pcie_ep_clkreq_default &pcie_ep_perst_default
+			&pcie_ep_wake_default>;
 };
 
 &pcie0_phy {

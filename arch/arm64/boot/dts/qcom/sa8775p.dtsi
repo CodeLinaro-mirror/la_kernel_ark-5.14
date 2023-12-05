@@ -3766,7 +3766,7 @@
 		power-domains = <&gcc PCIE_1_GDSC>;
 		phys = <&pcie1_phy>;
 		phy-names = "pciephy";
-		max-link-speed = <3>; /* FIXME: Limiting the Gen speed due to stability issues */
+		max-link-speed = <4>; /* FIXME: Limiting the Gen speed due to stability issues */
 		num-lanes = <4>;
 
 		status = "disabled";
