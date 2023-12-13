@@ -119,6 +119,24 @@
 /* PARF_CFG_BITS register fields */
 #define PARF_CFG_BITS_REQ_EXIT_L1SS_MSI_LTR_EN	BIT(1)
 
+#define GEN3_EQ_CONTROL_OFF			0x8a8
+#define GEN3_EQ_CONTROL_OFF_FB_MODE_MASK        GENMASK(3, 0)
+#define GEN3_EQ_CONTROL_OFF_PHASE23_EXIT_MODE   BIT(4)
+#define GEN3_EQ_CONTROL_OFF_PSET_REQ_VEC_MASK	GENMASK(23, 8)
+#define GEN3_EQ_CONTROL_OFF_FOM_INC_INITIAL_EVAL	BIT(24)
+
+#define GEN3_EQ_FB_MODE_DIR_CHANGE_OFF          0x8ac
+#define GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_VAL   0x5
+#define GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_VAL  0x5
+#define GEN3_EQ_FMDC_N_EVALS_VAL          0xD
+#define GEN3_EQ_FMDC_T_MIN_PHASE23_MASK         GENMASK(4, 0)
+#define GEN3_EQ_FMDC_N_EVALS_MASK               GENMASK(9, 5)
+#define GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_MASK  GENMASK(13, 10)
+#define GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_MASK	GENMASK(17, 14)
+#define GEN3_EQ_FMDC_N_EVALS_SHIFT			5
+#define GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_SHIFT		10
+#define GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_SHIFT	14
+
 /* ELBI registers */
 #define ELBI_SYS_STTS				0x08
 
@@ -294,6 +312,37 @@ static void qcom_pcie_disable_resources(struct qcom_pcie_ep *pcie_ep)
 	clk_bulk_disable_unprepare(pcie_ep->num_clks, pcie_ep->clks);
 }
 
+static void qcom_pcie_set_gen4_eq_presets(struct dw_pcie* pci)
+{
+	u32 reg;
+
+	reg = dw_pcie_readl_dbi(pci, GEN3_RELATED_OFF);
+	reg &= ~GEN3_RELATED_OFF_GEN3_ZRXDC_NONCOMPL;
+	reg &= ~GEN3_RELATED_OFF_RATE_SHADOW_SEL_MASK;
+	reg |= (0x1 << GEN3_RELATED_OFF_RATE_SHADOW_SEL_SHIFT);
+	dw_pcie_writel_dbi(pci, GEN3_RELATED_OFF, reg);
+
+	reg = dw_pcie_readl_dbi(pci,GEN3_EQ_FB_MODE_DIR_CHANGE_OFF);
+	reg &= ~GEN3_EQ_FMDC_T_MIN_PHASE23_MASK;
+	reg &= ~GEN3_EQ_FMDC_N_EVALS_MASK;
+	reg |= (GEN3_EQ_FMDC_N_EVALS_VAL <<
+		GEN3_EQ_FMDC_N_EVALS_SHIFT);
+	reg &= ~GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_MASK;
+	reg |= (GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_VAL <<
+		GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_SHIFT);
+	reg &= ~GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_MASK;
+	reg |= (GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_VAL <<
+		GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_SHIFT);
+	dw_pcie_writel_dbi(pci, GEN3_EQ_FB_MODE_DIR_CHANGE_OFF, reg);
+
+	reg = dw_pcie_readl_dbi(pci, GEN3_EQ_CONTROL_OFF);
+	reg &= ~GEN3_EQ_CONTROL_OFF_FB_MODE_MASK;
+	reg &= ~GEN3_EQ_CONTROL_OFF_PHASE23_EXIT_MODE;
+	reg &= ~GEN3_EQ_CONTROL_OFF_FOM_INC_INITIAL_EVAL;
+	reg &= ~GEN3_EQ_CONTROL_OFF_PSET_REQ_VEC_MASK;
+	dw_pcie_writel_dbi(pci, GEN3_EQ_CONTROL_OFF, reg);
+}
+
 static int qcom_pcie_perst_deassert(struct dw_pcie *pci)
 {
 	struct qcom_pcie_ep *pcie_ep = to_pcie_ep(pci);
@@ -402,6 +451,10 @@ static int qcom_pcie_perst_deassert(struct dw_pcie *pci)
 	if (ret) {
 		dev_err(dev, "Failed to complete initialization: %d\n", ret);
 		goto err_disable_resources;
+	}
+
+	if(pci->link_gen == 0x4) {
+		qcom_pcie_set_gen4_eq_presets(pci);
 	}
 
 	/*
