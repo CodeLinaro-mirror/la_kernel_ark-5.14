@@ -191,6 +191,11 @@
 		};
 	};
 
+	rng: rng@10d2000 {
+		compatible = "qcom,sa8775p-trng", "qcom,trng";
+		reg = <0 0x010d2000 0 0x1000>;
+	};
+
 	aggre1_noc: interconnect-aggre1-noc {
 		compatible = "qcom,sa8775p-aggre1-noc";
 		#interconnect-cells = <2>;
