@@ -1,1 +1,1 @@
-# CONFIG_MHI_BUS_EP is not set
+CONFIG_MHI_BUS_EP=y
