@@ -21,6 +21,8 @@
 
 #include "common.h"
 
+#define SMC_MAX_RX_TIMEOUT_MS 30
+
 /**
  * struct scmi_smc - Structure representing a SCMI smc transport
  *
@@ -33,6 +35,7 @@
  * @func_id: smc/hvc call function id
  * @cap_id: smc/hvc doorbell's capability id to be used on Qualcomm virtual
  *	    platforms
+ * @max_rx_timeout_ms: maximum rx timeout value in milliseconds
  */
 
 struct scmi_smc {
@@ -44,6 +47,7 @@ struct scmi_smc {
 	atomic_t inflight;
 	u32 func_id;
 	unsigned long cap_id;
+	int max_rx_timeout_ms;
 };
 
 static irqreturn_t smc_msg_done_isr(int irq, void *data)
@@ -119,6 +123,8 @@ static int smc_chan_setup(struct scmi_chan_info *cinfo, struct device *dev,
 	scmi_info = devm_kzalloc(dev, sizeof(*scmi_info), GFP_KERNEL);
 	if (!scmi_info)
 		return -ENOMEM;
+
+	scmi_info->max_rx_timeout_ms = SMC_MAX_RX_TIMEOUT_MS;
 
 	np = of_parse_phandle(cdev->of_node, "shmem", 0);
 	if (!of_device_is_compatible(np, "arm,scmi-shmem"))
@@ -241,6 +247,13 @@ static void smc_mark_txdone(struct scmi_chan_info *cinfo, int ret,
 	smc_channel_lock_release(scmi_info);
 }
 
+static int smc_get_max_rx_timeout_ms(struct scmi_chan_info *cinfo)
+{
+	struct scmi_smc *scmi_info = cinfo->transport_info;
+
+	return scmi_info->max_rx_timeout_ms;
+}
+
 static const struct scmi_transport_ops scmi_smc_ops = {
 	.chan_available = smc_chan_available,
 	.chan_setup = smc_chan_setup,
@@ -248,11 +261,12 @@ static const struct scmi_transport_ops scmi_smc_ops = {
 	.send_message = smc_send_message,
 	.mark_txdone = smc_mark_txdone,
 	.fetch_response = smc_fetch_response,
+	.get_max_rx_timeout_ms = smc_get_max_rx_timeout_ms,
 };
 
 const struct scmi_desc scmi_smc_desc = {
 	.ops = &scmi_smc_ops,
-	.max_rx_timeout_ms = 30,
+	.max_rx_timeout_ms = 0, /* overriden by smc_get_max_rx_timeout_ms */
 	.max_msg = 20,
 	.max_msg_size = 128,
 	/*
