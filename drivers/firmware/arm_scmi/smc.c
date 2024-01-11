@@ -159,6 +159,9 @@ static int smc_chan_setup(struct scmi_chan_info *cinfo, struct device *dev,
 		*/
 
 		memcpy_fromio(&cap_id, ptr, sizeof(cap_id));
+
+		/* increase the timeout value for Qualcomm platform */
+		scmi_info->max_rx_timeout_ms = 3000;
 	}
 
 	/*
