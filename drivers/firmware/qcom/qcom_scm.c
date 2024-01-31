@@ -45,8 +45,11 @@ struct qcom_scm {
 	struct mutex scm_bw_lock;
 	int scm_vote_count;
 
+	u64 call_ctx_cnt;
 	u64 dload_mode_addr;
 };
+
+DEFINE_SEMAPHORE(qcom_scm_sem_lock);
 
 struct qcom_scm_current_perm_info {
 	__le32 vmid;
@@ -1767,6 +1770,8 @@ static void __check_fw_for_skip_mutex_support(void)
 
 	num_simultaneous_requests = res.result[0] & 0xFF;
 
+	__scm->call_ctx_cnt = res.result[0] & 0xFF;
+
 	__scm->fw_supports_skip_mutex = (num_simultaneous_requests >= MIN_SIMULTANEOUS_REQS);
 }
 
@@ -1969,6 +1974,7 @@ static int qcom_scm_probe(struct platform_device *pdev)
 
 	__get_convention();
 	__check_fw_for_skip_mutex_support();
+	sema_init(&qcom_scm_sem_lock,(int)__scm->call_ctx_cnt);
 
 	/*
 	 * If requested enable "download mode", from this point on warmboot

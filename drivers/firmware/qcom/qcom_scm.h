@@ -6,6 +6,8 @@
 
 #include <linux/firmware/qcom/qcom_scm.h>
 
+#include <linux/semaphore.h>
+
 struct device;
 
 enum qcom_scm_convention {
@@ -16,6 +18,7 @@ enum qcom_scm_convention {
 };
 
 extern enum qcom_scm_convention qcom_scm_convention;
+extern struct semaphore qcom_scm_sem_lock;
 
 enum qcom_scm_arg_types {
 	QCOM_SCM_VAL,
