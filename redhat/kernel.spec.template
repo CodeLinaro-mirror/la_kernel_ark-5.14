@@ -116,8 +116,12 @@ Summary: The Linux kernel
 %global efiuki 0
 %endif
 
+# Default compression algorithm
+%global compression zstd
+%global compression_flags --rm
+%global compext zst
 %if %{zipmodules}
-%global zipsed -e 's/\.ko$/\.ko.xz/'
+%global zipsed -e 's/\.ko$/\.ko.%compext/'
 # for parallel xz processes, replace with 1 to go back to single process
 %endif
 
@@ -263,8 +267,6 @@ Summary: The Linux kernel
 %define with_perf 0
 %define with_tools 0
 %define with_bpftool 0
-# selftests turns on bpftool
-%define with_selftests 0
 %endif
 
 %if %{with_verbose}
@@ -321,7 +323,8 @@ Summary: The Linux kernel
 %define with_cross_headers 0
 %define with_perf 0
 %define with_tools 0
-%define with_bpftool 0
+%define with_bpftool 1
+%define with_selftests 1
 %define with_zfcpdump 0
 %define with_kabichk  0
 %define with_kernel_abi_stablelists 0
@@ -408,9 +411,9 @@ Summary: The Linux kernel
 %define use_vdso 1
 %endif
 
-# selftests require bpftool to be built
-%if %{with_selftests}
-%define with_bpftool 1
+# selftests require bpftool to be built.  If bpftools is disabled, then disable selftests
+%if %{with_bpftool} == 0
+%define with_selftests 0
 %endif
 
 %ifnarch noarch
@@ -600,7 +603,7 @@ Summary: The Linux kernel
 
 
 Name: %%PACKAGE_NAME%%
-License: GPLv2 and Redistributable, no modification permitted
+License: ((GPL-2.0-only WITH Linux-syscall-note) OR BSD-2-Clause) AND ((GPL-2.0-only WITH Linux-syscall-note) OR BSD-3-Clause) AND ((GPL-2.0-only WITH Linux-syscall-note) OR CDDL-1.0) AND ((GPL-2.0-only WITH Linux-syscall-note) OR Linux-OpenIB) AND ((GPL-2.0-only WITH Linux-syscall-note) OR MIT) AND ((GPL-2.0-or-later WITH Linux-syscall-note) OR BSD-3-Clause) AND ((GPL-2.0-or-later WITH Linux-syscall-note) OR MIT) AND Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND BSD-3-Clause-Clear AND GFDL-1.1-no-invariants-or-later AND GPL-1.0-or-later AND (GPL-1.0-or-later OR BSD-3-Clause) AND (GPL-1.0-or-later WITH Linux-syscall-note) AND GPL-2.0-only AND (GPL-2.0-only OR Apache-2.0) AND (GPL-2.0-only OR BSD-2-Clause) AND (GPL-2.0-only OR BSD-3-Clause) AND (GPL-2.0-only OR CDDL-1.0) AND (GPL-2.0-only OR GFDL-1.1-no-invariants-or-later) AND (GPL-2.0-only OR GFDL-1.2-no-invariants-only) AND (GPL-2.0-only WITH Linux-syscall-note) AND GPL-2.0-or-later AND (GPL-2.0-or-later OR BSD-2-Clause) AND (GPL-2.0-or-later OR BSD-3-Clause) AND (GPL-2.0-or-later OR CC-BY-4.0) AND (GPL-2.0-or-later WITH GCC-exception-2.0) AND (GPL-2.0-or-later WITH Linux-syscall-note) AND ISC AND LGPL-2.0-or-later AND (LGPL-2.0-or-later OR BSD-2-Clause) AND (LGPL-2.0-or-later WITH Linux-syscall-note) AND LGPL-2.1-only AND (LGPL-2.1-only OR BSD-2-Clause) AND (LGPL-2.1-only WITH Linux-syscall-note) AND LGPL-2.1-or-later AND (LGPL-2.1-or-later WITH Linux-syscall-note) AND (Linux-OpenIB OR GPL-2.0-only) AND (Linux-OpenIB OR GPL-2.0-only OR BSD-2-Clause) AND Linux-man-pages-copyleft AND MIT AND (MIT OR GPL-2.0-only) AND (MIT OR GPL-2.0-or-later) AND (MIT OR LGPL-2.1-only) AND (MPL-1.1 OR GPL-2.0-only) AND (X11 OR GPL-2.0-only) AND (X11 OR GPL-2.0-or-later) AND Zlib
 URL: https://www.kernel.org/
 Version: %{specversion}
 Release: %{pkg_release}
@@ -628,7 +631,7 @@ Provides: installonlypkg(kernel)
 # List the packages used during the kernel build
 #
 BuildRequires: kmod, bash, coreutils, tar, git-core, which
-BuildRequires: bzip2, xz, findutils, gzip, m4, perl-interpreter, perl-Carp, perl-devel, perl-generators, make, diffutils, gawk
+BuildRequires: bzip2, xz, findutils, gzip, m4, perl-interpreter, perl-Carp, perl-devel, perl-generators, make, diffutils, gawk, %compression
 BuildRequires: gcc, binutils, redhat-rpm-config, hmaccalc, bison, flex, gcc-c++
 BuildRequires: net-tools, hostname, bc, elfutils-devel
 BuildRequires: dwarves
@@ -706,6 +709,9 @@ BuildConflicts: dwarves < 1.13
 %undefine _unique_debug_srcs
 %undefine _debugsource_packages
 %undefine _debuginfo_subpackages
+# Remove -q option below to provide 'extracting debug info' messages
+# The -q option is already removed, because it breaks the rhivos-1 build,
+# due to an older rpm currently in its buildroot vs. latest rhel-9.x
 %global _find_debuginfo_opts -r
 %global _missing_build_ids_terminate_build 1
 %global _no_recompute_build_ids 1
@@ -765,6 +771,12 @@ BuildRequires: systemd-udev >= 252-1
 BuildRequires: tpm2-tools
 # For Azure CVM specific udev rules
 BuildRequires: WALinuxAgent-cvm
+# For UKI sb cert
+%if 0%{?centos}
+BuildRequires: centos-sb-certs >= 9.0-23
+%else
+BuildRequires: redhat-sb-certs >= 9.4-0.1
+%endif
 %endif
 
 # Because this is the kernel, it's hard to get a single upstream URL
@@ -879,7 +891,6 @@ Source81: process_configs.sh
 Source82: update_scripts.sh
 
 Source84: mod-internal.list
-Source85: mod-partner.list
 
 Source100: rheldup3.x509
 Source101: rhelkpatch1.x509
@@ -896,9 +907,6 @@ Source104: rhelima_centos.x509
 %define ima_cert_name ima.cer
 
 Source150: dracut-virt.conf
-# Remove this when https://bugzilla.redhat.com/show_bug.cgi?id=2225009 gets resolved
-Source151: uki-sb-cert-x86_64-centos.crt
-Source152: uki-sb-cert-x86_64-rhel.crt
 
 Source200: check-kabi
 
@@ -1032,7 +1040,6 @@ It provides the kernel source files common to all builds.
 %package -n perf
 Summary: Performance monitoring for the Linux kernel
 Requires: bzip2
-License: GPLv2
 %description -n perf
 This package contains the perf tool, which enables performance monitoring
 of the Linux kernel.
@@ -1069,14 +1076,12 @@ This package provides debug information for the perf python bindings.
 
 %package -n libperf
 Summary: The perf library from kernel source
-License: GPLv2
 %description -n libperf
 This package contains the kernel source perf library.
 
 %package -n libperf-devel
 Summary: Developement files for the perf library from kernel source
 Requires: libperf = %{version}-%{release}
-License: GPLv2
 %description -n libperf-devel
 This package includes libraries and header files needed for development
 of applications which use perf library from kernel source.
@@ -1101,7 +1106,6 @@ This package provides debug information for the libperf package.
 %if %{with_tools}
 %package -n kernel-tools
 Summary: Assortment of tools for the Linux kernel
-License: GPLv2
 %ifarch %{cpupowerarchs}
 Provides:  cpupowerutils = 1:009-0.6.p1
 Obsoletes: cpupowerutils < 1:009-0.6.p1
@@ -1119,14 +1123,12 @@ and the supporting documentation.
 
 %package -n kernel-tools-libs
 Summary: Libraries for the kernels-tools
-License: GPLv2
 %description -n kernel-tools-libs
 This package contains the libraries built from the tools/ directory
 from the kernel source.
 
 %package -n kernel-tools-libs-devel
 Summary: Assortment of tools for the Linux kernel
-License: GPLv2
 Requires: kernel-tools = %{version}-%{release}
 %ifarch %{cpupowerarchs}
 Provides:  cpupowerutils-devel = 1:009-0.6.p1
@@ -1153,7 +1155,6 @@ This package provides debug information for package kernel-tools.
 
 %package -n rtla
 Summary: Real-Time Linux Analysis tools
-License: GPLv2
 Requires: libtraceevent
 Requires: libtracefs
 %description -n rtla
@@ -1164,7 +1165,6 @@ about the properties and root causes of unexpected results.
 
 %package -n rv
 Summary: RV: Runtime Verification
-License: GPLv2
 %description -n rv
 Runtime Verification (RV) is a lightweight (yet rigorous) method that
 complements classical exhaustive verification techniques (such as model
@@ -1183,7 +1183,6 @@ analysing the logical and timing behavior of Linux.
 
 %package -n bpftool
 Summary: Inspection and simple manipulation of eBPF programs and maps
-License: GPLv2
 Version: %{bpftoolversion}
 %description -n bpftool
 This package contains the bpftool, which allows inspection and simple
@@ -1212,7 +1211,6 @@ This package provides debug information for the bpftool package.
 
 %package selftests-internal
 Summary: Kernel samples and selftests
-License: GPLv2
 Requires: binutils, bpftool, iproute-tc, nmap-ncat, python3, fuse-libs, keyutils
 Requires: %{name}-modules-internal = %{version}-%{release}
 %if %{with_automotive}
@@ -1485,9 +1483,6 @@ Requires: %{name}-%{?1:%{1}-}-modules-core-uname-r = %{KVERREL}%{uname_variant %
 %{expand:%%kernel_modules_extra_package %{?1:%{1}} %{!?{-n}:%{1}}%{?{-n}:%{-n*}} %{-m:%{-m}}}\
 %if %{-m:0}%{!-m:1}\
 %{expand:%%kernel_modules_internal_package %{?1:%{1}} %{!?{-n}:%{1}}%{?{-n}:%{-n*}}}\
-%if 0%{!?fedora:1}\
-%{expand:%%kernel_modules_partner_package %{?1:%{1}} %{!?{-n}:%{1}}%{?{-n}:%{-n*}}}\
-%endif\
 %{expand:%%kernel_debuginfo_package %{?1:%{1}}}\
 %endif\
 %if %{with_automotive} \
@@ -1503,27 +1498,6 @@ Requires: %{name}%{?1:-%{1}}-modules-core-uname-r = %{KVERREL}%{uname_suffix %{?
 %if %{with_gcov}\
 %{expand:%%kernel_gcov_package %{?1:%{1}}}\
 %endif\
-%{nil}
-
-#
-# This macro creates a kernel-<subpackage>-modules-partner package.
-#	%%kernel_modules_partner_package <subpackage> <pretty-name>
-#
-%define kernel_modules_partner_package() \
-%package %{?1:%{1}-}modules-partner\
-Summary: Extra kernel modules to match the %{?2:%{2} }kernel\
-Group: System Environment/Kernel\
-Provides: %{name}%{?1:-%{1}}-modules-partner-%{_target_cpu} = %{version}-%{release}\
-Provides: %{name}%{?1:-%{1}}-modules-partner-%{_target_cpu} = %{version}-%{release}%{uname_suffix %{?1:%{1}}}\
-Provides: %{name}%{?1:-%{1}}-modules-partner = %{version}-%{release}%{uname_suffix %{?1:%{1}}}\
-Provides: installonlypkg(kernel-module)\
-Provides: %{name}%{?1:-%{1}}-modules-partner-uname-r = %{KVERREL}%{uname_suffix %{?1:%{1}}}\
-Requires: %{name}-uname-r = %{KVERREL}%{uname_suffix %{?1:%{1}}}\
-Requires: %{name}%{?1:-%{1}}-modules-uname-r = %{KVERREL}%{uname_suffix %{?1:%{1}}}\
-AutoReq: no\
-AutoProv: yes\
-%description %{?1:%{1}-}modules-partner\
-This package provides kernel modules for the %{?2:%{2} }kernel package for Red Hat partners usage.\
 %{nil}
 
 # Now, each variant package.
@@ -2322,6 +2296,8 @@ BuildKernel() {
     {
         # remove files that will be auto generated by depmod at rpm -i time
         pushd $RPM_BUILD_ROOT/lib/modules/$KernelVer/
+            # in case below list needs to be extended, remember to add a
+            # matching ghost entry in the files section as well
             rm -f modules.{alias,alias.bin,builtin.alias.bin,builtin.bin} \
                   modules.{dep,dep.bin,devname,softdep,symbols,symbols.bin}
         popd
@@ -2336,10 +2312,6 @@ BuildKernel() {
 %if %{with_automotive}
     # Identify modules in the kernel-automotive-kvm package
     %{SOURCE20} $RPM_BUILD_ROOT lib/modules/$KernelVer %{SOURCE400} kvm
-%endif
-%if 0%{!?fedora:1}
-    # Identify modules in the kernel-modules-partner package
-    %{SOURCE20} $RPM_BUILD_ROOT lib/modules/$KernelVer %{SOURCE85} partner
 %endif
 
     #
@@ -2361,10 +2333,6 @@ BuildKernel() {
 %if %{with_automotive}
     # don't include anything going into kernel-automotive-kvm in the file lists
     xargs rm -rf < mod-kvm.list
-%endif
-%if 0%{!?fedora:1}
-    # don't include anything going int kernel-modules-partner in the file lists
-    xargs rm -rf < mod-partner.list
 %endif
 
     if [ $DoModules -eq 1 ]; then
@@ -2425,9 +2393,9 @@ BuildKernel() {
 %else
         SBATsuffix="rhel"
 %endif
-        echo "linux,1,Red Hat,linux,$KernelVer,https://bugzilla.redhat.com/" >> $KernelUnifiedImage.sbat
-        echo "linux.$SBATsuffix,1,Red Hat,linux,$KernelVer,https://bugzilla.redhat.com/" >> $KernelUnifiedImage.sbat
-        echo "kernel-uki-virt.$SBATsuffix,1,Red Hat,kernel-uki-virt,$KernelVer,https://bugzilla.redhat.com/" >> $KernelUnifiedImage.sbat
+        echo "linux,1,Red Hat,linux,$KernelVer,mailto:secalert@redhat.com" >> $KernelUnifiedImage.sbat
+        echo "linux.$SBATsuffix,1,Red Hat,linux,$KernelVer,mailto:secalert@redhat.com" >> $KernelUnifiedImage.sbat
+        echo "kernel-uki-virt.$SBATsuffix,1,Red Hat,kernel-uki-virt,$KernelVer,mailto:secalert@redhat.com" >> $KernelUnifiedImage.sbat
         # Remove the original .sbat section
         objcopy --remove-section .sbat $KernelUnifiedImage
         # Get the end of the last section
@@ -2444,11 +2412,10 @@ BuildKernel() {
 
 %if 0%{?centos}
 	UKI_secureboot_name=centossecureboot204
-	UKI_secureboot_cert=%{SOURCE151}
 %else
 	UKI_secureboot_name=redhatsecureboot504
-	UKI_secureboot_cert=%{SOURCE152}
 %endif
+	UKI_secureboot_cert=%{_datadir}/pki/sb-certs/secureboot-uki-virt-%{_arch}.cer
 
         %pesign -s -i $KernelUnifiedImage -o $KernelUnifiedImage.signed -a %{secureboot_ca_0} -c $UKI_secureboot_cert -n $UKI_secureboot_name
         if [ ! -s $KernelUnifiedImage.signed ]; then
@@ -2456,9 +2423,6 @@ BuildKernel() {
           exit 1
         fi
         mv $KernelUnifiedImage.signed $KernelUnifiedImage
-
-        mkdir -p $RPM_BUILD_ROOT%{_datadir}/doc/kernel-keys/$KernelVer
-        cp -a $UKI_secureboot_cert $RPM_BUILD_ROOT%{_datadir}/doc/kernel-keys/$KernelVer/secureboot-uki-%{_arch}.cer
 
 # signkernel
 %endif
@@ -2493,12 +2457,8 @@ BuildKernel() {
     sed -e 's/^lib*/%dir \/lib/' %{?zipsed} $RPM_BUILD_ROOT/module-dirs.list > ../%{name}${Variant:+-${Variant}}-modules-core.list
     sed -e 's/^lib*/\/lib/' %{?zipsed} $RPM_BUILD_ROOT/modules.list >> ../%{name}${Variant:+-${Variant}}-modules-core.list
     sed -e 's/^lib*/\/lib/' %{?zipsed} $RPM_BUILD_ROOT/mod-extra.list >> ../%{name}${Variant:+-${Variant}}-modules-extra.list
-    sed -e 's/^lib*/\/lib/' %{?zipsed} $RPM_BUILD_ROOT/mod-internal.list >> ../%{name}${Variant:+-${Variant}}-modules-internal.list
 %if %{with_automotive}
     sed -e 's/^lib*/\/lib/' %{?zipsed} $RPM_BUILD_ROOT/mod-kvm.list >> ../%{name}${Variant:+-${Variant}}-kvm.list
-%endif
-%if 0%{!?fedora:1}
-    sed -e 's/^lib*/\/lib/' %{?zipsed} $RPM_BUILD_ROOT/mod-partner.list >> ../%{name}${Variant:+-${Variant}}-modules-partner.list
 %endif
 
     # Cleanup
@@ -2509,9 +2469,6 @@ BuildKernel() {
     rm -f $RPM_BUILD_ROOT/mod-internal.list
 %if %{with_automotive}
     rm -f $RPM_BUILD_ROOT/mod-kvm.list
-%endif
-%if 0%{!?fedora:1}
-    rm -f $RPM_BUILD_ROOT/mod-partner.list
 %endif
 
 %if %{with_cross}
@@ -2700,12 +2657,14 @@ if [ -f $DevelDir/vmlinux.h ]; then
   RPM_VMLINUX_H=$DevelDir/vmlinux.h
 fi
 
+%if %{with_bpftool}
 %global bpftool_make \
   %{__make} EXTRA_CFLAGS="${RPM_OPT_FLAGS}" EXTRA_LDFLAGS="%{__global_ldflags}" DESTDIR=$RPM_BUILD_ROOT %{?make_opts} VMLINUX_H="${RPM_VMLINUX_H}" V=1
-%if %{with_bpftool}
 pushd tools/bpf/bpftool
 %{bpftool_make}
 popd
+%else
+echo "bpftools disabled ... disabling selftests"
 %endif
 
 %if %{with_selftests}
@@ -2794,7 +2753,7 @@ find Documentation -type d | xargs chmod u+w
   fi \
   if [ "%{zipmodules}" -eq "1" ]; then \
     echo "Compressing kernel modules ..." \
-    find $RPM_BUILD_ROOT/lib/modules/ -type f -name '*.ko' | xargs -n 16 -P${RPM_BUILD_NCPUS} -r xz; \
+    find $RPM_BUILD_ROOT/lib/modules/ -type f -name '*.ko' | xargs -n 16 -P${RPM_BUILD_NCPUS} -r %compression %compression_flags; \
   fi \
 %{nil}
 
@@ -3203,19 +3162,6 @@ fi\
 %endif
 
 #
-# This macro defines a %%post script for a kernel*-modules-partner package.
-# It also defines a %%postun script that does the same thing.
-#	%%kernel_modules_partner_post [<subpackage>]
-#
-%define kernel_modules_partner_post() \
-%{expand:%%post %{?1:%{1}-}modules-partner}\
-/sbin/depmod -a %{KVERREL}%{?1:+%{1}}\
-%{nil}\
-%{expand:%%postun %{?1:%{1}-}modules-partner}\
-/sbin/depmod -a %{KVERREL}%{?1:+%{1}}\
-%{nil}
-
-#
 # This macro defines a %%post script for a kernel*-modules package.
 # It also defines a %%postun script that does the same thing.
 #	%%kernel_modules_post [<subpackage>]
@@ -3241,17 +3187,11 @@ fi\
 
 #
 # This macro defines a %%post script for a kernel*-modules-core package.
-# It also defines a %%postun script that does the same thing.
 #	%%kernel_modules_core_post [<subpackage>]
-#
-# FIXME: /bin/kernel-install can't handle UKIs (yet), so cleanup depmod files in %postun for now.
 #
 %define kernel_modules_core_post() \
 %{expand:%%posttrans %{?1:%{1}-}modules-core}\
 /sbin/depmod -a %{KVERREL}%{?1:+%{1}}\
-%{nil}\
-%{expand:%%postun %{?1:%{1}-}modules-core}\
-rm -f /lib/modules/%{KVERREL}%{?1:+%{1}}/modules.*\
 %{nil}
 
 # This macro defines a %%posttrans script for a kernel package.
@@ -3287,9 +3227,6 @@ fi\
 %{expand:%%kernel_modules_core_post %{?-v*}}\
 %{expand:%%kernel_modules_extra_post %{?-v*}}\
 %{expand:%%kernel_modules_internal_post %{?-v*}}\
-%if 0%{!?fedora:1}\
-%{expand:%%kernel_modules_partner_post %{?-v*}}\
-%endif\
 %if "%{-v*}" == "rt" || "%{-v*}" == "rt-debug"\
 %{expand:%%kernel_kvm_post %{?-v*}}\
 %endif\
@@ -3504,7 +3441,7 @@ fi
 
 %ifarch %{cpupowerarchs}
 %files -n kernel-tools-libs
-%{_libdir}/libcpupower.so.0
+%{_libdir}/libcpupower.so.1
 %{_libdir}/libcpupower.so.0.0.1
 
 %files -n kernel-tools-libs-devel
@@ -3588,7 +3525,7 @@ fi
 %if %{2}\
 %{expand:%%files %{?1:-f %{name}-%{?3:%{3}-}ldsoconf.list} %{?3:%{3}-}core}\
 %{!?_licensedir:%global license %%doc}\
-%license linux-%{KVERREL}/COPYING-%{version}-%{release}\
+%%license linux-%{KVERREL}/COPYING-%{version}-%{release}\
 /lib/modules/%{KVERREL}%{?3:+%{3}}/%{?-k:%{-k*}}%{!?-k:vmlinuz}\
 %ghost /%{image_install_path}/%{?-k:%{-k*}}%{!?-k:vmlinuz}-%{KVERREL}%{?3:+%{3}}\
 /lib/modules/%{KVERREL}%{?3:+%{3}}/.vmlinuz.hmac \
@@ -3623,6 +3560,16 @@ fi
 /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.modesetting\
 /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.networking\
 /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.order\
+%ghost %attr(0644, root, root) /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.alias\
+%ghost %attr(0644, root, root) /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.alias.bin\
+%ghost %attr(0644, root, root) /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.builtin.alias.bin\
+%ghost %attr(0644, root, root) /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.builtin.bin\
+%ghost %attr(0644, root, root) /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.dep\
+%ghost %attr(0644, root, root) /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.dep.bin\
+%ghost %attr(0644, root, root) /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.devname\
+%ghost %attr(0644, root, root) /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.softdep\
+%ghost %attr(0644, root, root) /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.symbols\
+%ghost %attr(0644, root, root) /lib/modules/%{KVERREL}%{?3:+%{3}}/modules.symbols.bin\
 %{expand:%%files -f %{name}-%{?3:%{3}-}modules.list %{?3:%{3}-}modules}\
 %{expand:%%files %{?3:%{3}-}devel}\
 %defverify(not mtime)\
@@ -3630,12 +3577,10 @@ fi
 %{expand:%%files %{?3:%{3}-}devel-matched}\
 %{expand:%%files -f %{name}-%{?3:%{3}-}modules-extra.list %{?3:%{3}-}modules-extra}\
 %config(noreplace) /etc/modprobe.d/*-blacklist.conf\
-%{expand:%%files -f %{name}-%{?3:%{3}-}modules-internal.list %{?3:%{3}-}modules-internal}\
+%{expand:%%files %{?3:%{3}-}modules-internal}\
+/lib/modules/%{KVERREL}%{?3:+%{3}}/internal\
 %if %{with_automotive}\
 %{expand:%%files -f %{name}-%{?3:%{3}-}kvm.list %{?3:%{3}-}kvm}\
-%endif\
-%if 0%{!?fedora:1}\
-%{expand:%%files -f %{name}-%{?3:%{3}-}modules-partner.list %{?3:%{3}-}modules-partner}\
 %endif\
 %if %{with_debuginfo}\
 %ifnarch noarch\

@@ -694,9 +694,8 @@ static void ethqos_clks_disable(void *data)
 	ethqos_clks_config(data, false);
 }
 
-static void ethqos_ptp_clk_freq_config(void *priv1)
+static void ethqos_ptp_clk_freq_config(struct stmmac_priv *priv)
 {
-	struct stmmac_priv *priv = priv1;
 	struct plat_stmmacenet_data *plat_dat = priv->plat;
 	int err;
 

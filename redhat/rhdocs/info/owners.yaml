@@ -93,12 +93,12 @@ subsystems:
      - rhel-sst-kernel-maintainers
    requiredApproval: true
    maintainers:
+     - name: Jarod Wilson
+       email: jarod@redhat.com
+       gluser: jwilsonrh
      - name: Julio Faracco
        email: jfaracco@redhat.com
        gluser: jfaracco
-     - name: Scott Weaver
-       email: scweaver@redhat.com
-       gluser: scweaver
    paths:
        # Focus is on main-automotive branch
        includes:
@@ -117,14 +117,49 @@ subsystems:
      - rhel-sst-kernel-maintainers
    requiredApproval: true
    maintainers:
+     - name: Scott Weaver
+       email: scweaver@redhat.com
+       gluser: scweaver
+   paths:
+       includes:
+          - Makefile.rhelver
+   scm: git https://gitlab.com/redhat/centos-stream/src/kernel/centos-stream-9.git
+ - subsystem: CentOS Stream 9 Real Time Kernel Maintainer
+   labels:
+     name: redhat
+   status: Supported
+   devel-sst:
+     - rhel-sst-kernel-rts
+   qe-sst:
+     - rhel-sst-kernel-rts
+   requiredApproval: true
+   maintainers:
+     - name: Eder Zulian
+       email: ezulian@redhat.com
+       gluser: ezulian
+     - name: Derek Barbosa
+       email: debarbos@redhat.com
+       gluser: debarbos
+   paths:
+       includes:
+          - Makefile.rhelver
+ - subsystem: RHEL 9.3 Kernel Maintainer
+   labels:
+     name: redhat
+   status: Supported
+   devel-sst:
+     - rhel-sst-kernel-maintainers
+   qe-sst:
+     - rhel-sst-kernel-maintainers
+   requiredApproval: true
+   maintainers:
      - name: Jan Stancek
        email: jstancek@redhat.com
        gluser: jstancek
    paths:
        includes:
           - Makefile.rhelver
-   scm: git https://gitlab.com/redhat/centos-stream/src/kernel/centos-stream-9.git
- - subsystem: CentOS Stream 9 Real Time Kernel Maintainer
+ - subsystem: RHEL 9.3 Real Time Kernel Maintainer
    labels:
      name: redhat
    status: Supported
@@ -273,6 +308,41 @@ subsystems:
        includes:
           - Makefile.rhelver
  - subsystem: CentOS Stream 8 Real Time Kernel Maintainer
+   labels:
+     name: redhat
+   status: Supported
+   devel-sst:
+     - rhel-sst-kernel-rts
+   qe-sst:
+     - rhel-sst-kernel-rts
+   requiredApproval: true
+   maintainers:
+     - name: Derek Barbosa
+       email: debarbos@redhat.com
+       gluser: debarbos
+     - name: Eder Zulian
+       email: ezulian@redhat.com
+       gluser: ezulian
+   paths:
+       includes:
+          - Makefile.rhelver
+ - subsystem: RHEL 8.9 Kernel Maintainer
+   labels:
+     name: redhat
+   status: Supported
+   devel-sst:
+     - rhel-sst-kernel-maintainers
+   qe-sst:
+     - rhel-sst-kernel-maintainers
+   requiredApproval: true
+   maintainers:
+     - name: Patrick Talbert
+       email: ptalbert@redhat.com
+       gluser: ptalbert
+   paths:
+       includes:
+          - Makefile.rhelver
+ - subsystem: RHEL 8.9 Real Time Kernel Maintainer
    labels:
      name: redhat
    status: Supported
@@ -581,9 +651,9 @@ subsystems:
      name: 8139cp
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ivan Vecera
@@ -597,14 +667,14 @@ subsystems:
      name: r8169
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
-     - name: José Ignacio Tornos Martínez
-       email: jtornosm@redhat.com
-       gluser: jtornosm
+     - name: Izabela Bakollari
+       email: ibakolla@redhat.com
+       gluser: ibakolla
    paths:
        includes:
           - drivers/net/ethernet/realtek/r8169*
@@ -727,9 +797,9 @@ subsystems:
      name: ena
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Dan Campbell
@@ -760,9 +830,6 @@ subsystems:
      - name: Ivan Vecera
        email: ivecera@redhat.com
        gluser: ivecera
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
      - name: Izabela Bakollari
        email: ibakolla@redhat.com
        gluser: ibakolla
@@ -776,9 +843,9 @@ subsystems:
      name: efa
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Izabela Bakollari
@@ -898,14 +965,14 @@ subsystems:
      name: aquantia
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
+     - name: Dan Campbell
+       email: dacampbe@redhat.com
+       gluser: dacampbe
    reviewers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -964,9 +1031,9 @@ subsystems:
      name: arcnet
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -1126,9 +1193,6 @@ subsystems:
      - rhel-sst-null
    requiredApproval: true
    maintainers:
-     - name: Adrien Thierry
-       email: athierry@redhat.com
-       gluser: athierry1
      - name: Andrew Halaney
        email: ahalaney@redhat.com
        gluser: ahalaney
@@ -1207,9 +1271,9 @@ subsystems:
      name: atm_drivers
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -1226,9 +1290,9 @@ subsystems:
      name: atheros
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Jarod Wilson
@@ -1272,16 +1336,13 @@ subsystems:
    qe-sst:
      - rhivos-ft-auto-kernel
    maintainers:
+     - name: Jarod Wilson
+       email: jarod@redhat.com
+       gluser: jwilsonrh
      - name: Julio Faracco
        email: jfaracco@redhat.com
        gluser: jfaracco
-     - name: Scott Weaver
-       email: scweaver@redhat.com
-       gluser: scweaver
    reviewers:
-     - name: Adrien Thierry
-       email: athierry@redhat.com
-       gluser: athierry1
      - name: Alessandro Carminati
        email: acarmina@redhat.com
        gluser: acarmina
@@ -1331,6 +1392,9 @@ subsystems:
      - rhel-sst-logical-storage
    requiredApproval: false
    maintainers:
+     - name: Benjamin Marzinski
+       email: bmarzins@redhat.com
+       gluser: bmarzins
      - name: Mike Snitzer
        email: snitzer@redhat.com
        gluser: snitm
@@ -1342,9 +1406,9 @@ subsystems:
      name: be2net
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Petr Oros
@@ -1416,9 +1480,9 @@ subsystems:
      name: bonding
    status: Supported
    devel-sst:
-     - rhel-sst-networking
+     - rhel-sst-networking-core
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Hangbin Liu
@@ -1455,9 +1519,6 @@ subsystems:
      - name: Ivan Vecera
        email: ivecera@redhat.com
        gluser: ivecera
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
      - name: Izabela Bakollari
        email: ibakolla@redhat.com
        gluser: ibakolla
@@ -1481,9 +1542,9 @@ subsystems:
      - rhel-sst-kernel-tps
    requiredApproval: false
    maintainers:
-     - name: Yauheni Kaliuta
-       email: ykaliuta@redhat.com
-       gluser: ykaliuta
+     - name: Artem Savkov
+       email: asavkov@redhat.com
+       gluser: artem.savkov
    reviewers:
      - name: Jerome Marchand
        email: jmarchan@redhat.com
@@ -1494,9 +1555,6 @@ subsystems:
      - name: Viktor Malik
        email: vmalik@redhat.com
        gluser: vmalikrh
-     - name: Artem Savkov
-       email: asavkov@redhat.com
-       gluser: artem.savkov
    paths:
        includes:
           - arch/*/net/*
@@ -1519,9 +1577,9 @@ subsystems:
      name: b44
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Jarod Wilson
@@ -1535,9 +1593,9 @@ subsystems:
      name: bnx2
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ken Cox
@@ -1552,9 +1610,9 @@ subsystems:
      name: bnx2x
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Michal Schmidt
@@ -1569,9 +1627,9 @@ subsystems:
      name: bnxt_en
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ken Cox
@@ -1586,9 +1644,9 @@ subsystems:
      name: bnxt_re
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Selvin Xavier
@@ -1643,9 +1701,9 @@ subsystems:
      name: cnic
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Maurizio Lombardi
@@ -1659,9 +1717,9 @@ subsystems:
      name: bcma
    status: Provided
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: José Ignacio Tornos Martínez
        email: jtornosm@redhat.com
@@ -1678,9 +1736,9 @@ subsystems:
      name: tg3
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ken Cox
@@ -1722,6 +1780,7 @@ subsystems:
    paths:
        includes:
           - Documentation/networking/can.rst
+          - Documentation/networking/can_ucan_protocol.rst
           - include/linux/can/
           - include/uapi/linux/can/
           - include/uapi/linux/can.h
@@ -1732,13 +1791,13 @@ subsystems:
      name: liquidio
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
+     - name: Izabela Bakollari
+       email: ibakolla@redhat.com
+       gluser: ibakolla
    paths:
        includes:
           - drivers/net/ethernet/cavium/liquidio/
@@ -1747,13 +1806,13 @@ subsystems:
      name: thunderx
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
+     - name: Izabela Bakollari
+       email: ibakolla@redhat.com
+       gluser: ibakolla
    paths:
        includes:
           - drivers/net/ethernet/cavium/thunder/
@@ -1844,10 +1903,6 @@ subsystems:
      - rhel-sst-null
    requiredApproval: false
    maintainers:
-     - name: Ronnie Sahlberg
-       email: lsahlber@redhat.com
-       gluser: lsahlber
-   reviewers:
      - name: Benjamin Coddington
        email: bcodding@redhat.com
        gluser: bcodding
@@ -1863,6 +1918,9 @@ subsystems:
    paths:
        includes:
           - fs/cifs/
+          - fs/smb/client/
+          - fs/smb/common/
+          - include/uapi/linux/cifs/
  - subsystem: CISCO FCOE HBA (fnic)
    labels:
      name: fnic
@@ -1888,9 +1946,9 @@ subsystems:
      name: enic
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Michal Schmidt
@@ -2049,15 +2107,15 @@ subsystems:
      - name: Tales da Aparecida
        email: tdaapare@redhat.com
        gluser: tales-aparecida
-     - name: Tino Calancha
-       email: tcalanch@redhat.com
-       gluser: calancha
      - name: Michael Hofmann
        email: mhofmann@redhat.com
        gluser: mh21_rh
      - name: Serhii Turivnyi
        email: sturivny@redhat.com
        gluser: sturivny
+     - name: Bohdan Khomutskyi
+       email: bkhomuts@redhat.com
+       gluser: bkhomuts
    paths:
        includes:
           - .gitlab-ci.yml
@@ -2221,9 +2279,9 @@ subsystems:
      name: cxgb3
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Michal Schmidt
@@ -2237,9 +2295,9 @@ subsystems:
      name: cxgb4
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Michal Schmidt
@@ -2253,9 +2311,9 @@ subsystems:
      name: iw_cxgb4
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Rahul Lakkireddy
@@ -2348,6 +2406,9 @@ subsystems:
      - rhel-sst-null
    requiredApproval: false
    maintainers:
+     - name: Benjamin Marzinski
+       email: bmarzins@redhat.com
+       gluser: bmarzins
      - name: Mike Snitzer
        email: snitzer@redhat.com
        gluser: snitm
@@ -2364,9 +2425,9 @@ subsystems:
      name: devlink
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Petr Oros
@@ -2459,6 +2520,9 @@ subsystems:
      - rhel-sst-null
    requiredApproval: false
    maintainers:
+     - name: Benjamin Marzinski
+       email: bmarzins@redhat.com
+       gluser: bmarzins
      - name: Mike Snitzer
        email: snitzer@redhat.com
        gluser: snitm
@@ -2499,7 +2563,6 @@ subsystems:
    status: Supported
    devel-sst:
      - rhel-sst-kernel-rts
-     - rhel-sst-arch-hw
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
@@ -2507,9 +2570,6 @@ subsystems:
      - name: Jerry Snitselaar
        email: jsnitsel@redhat.com
        gluser: jsnitsel
-     - name: David Arcari
-       email: darcari@redhat.com
-       gluser: darcari
    paths:
        includes:
           - drivers/dma/
@@ -2624,14 +2684,47 @@ subsystems:
    paths:
        includes:
           - drivers/scsi/lpfc/
+ - subsystem: EROFS FILE SYSTEM
+   labels:
+     name: erofs
+   status: Internal
+   devel-sst:
+     - rhivos-ft-auto-kernel
+   qe-sst:
+     - rhivos-ft-auto-kernel
+   requiredApproval: false
+   maintainers:
+     - name: Andrew Halaney
+       email: ahalaney@redhat.com
+       gluser: ahalaney
+     - name: Lucas Karpinski
+       email: lkarpins@redhat.com
+       gluser: lkarpins-rh
+     - name: Alexander Larsson
+       email: alexl@redhat.com
+       gluser: alexlarsson
+   reviewers:
+     - name: Brian Foster
+       email: bfoster@redhat.com
+       gluser: bfoster2
+     - name: Carlos Maiolino
+       email: cmaiolino@redhat.com
+       gluser: cmaiolino
+     - name: Miklos Szeredi
+       email: mszeredi@redhat.com
+       gluser: mszeredi
+   paths:
+       includes:
+          - Documentation/filesystems/erofs.rst
+          - fs/erofs/
  - subsystem: ETHERNET
    labels:
      name: ethernet
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Michal Schmidt
@@ -2662,9 +2755,6 @@ subsystems:
      - name: Ivan Vecera
        email: ivecera@redhat.com
        gluser: ivecera
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
      - name: Izabela Bakollari
        email: ibakolla@redhat.com
        gluser: ibakolla
@@ -2678,7 +2768,7 @@ subsystems:
      name: if_bridge
    status: Supported
    devel-sst:
-     - rhel-sst-networking
+     - rhel-sst-networking-core
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
@@ -2701,14 +2791,14 @@ subsystems:
      name: phylib
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
+     - name: Izabela Bakollari
+       email: ibakolla@redhat.com
+       gluser: ibakolla
    reviewers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -2734,9 +2824,6 @@ subsystems:
      - name: Ivan Vecera
        email: ivecera@redhat.com
        gluser: ivecera
-     - name: Izabela Bakollari
-       email: ibakolla@redhat.com
-       gluser: ibakolla
    paths:
        includes:
           - Documentation/networking/phy.rst
@@ -2757,9 +2844,9 @@ subsystems:
      name: pse-pd
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ivan Vecera
@@ -2853,9 +2940,9 @@ subsystems:
      name: fddi
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -2882,6 +2969,7 @@ subsystems:
        includes:
           - redhat/configs/fedora/
           - redhat/fedora_files/
+          - redhat/scripts/fedora/
  - subsystem: FILESYSTEM (GENERAL)
    labels:
      name: fs
@@ -2929,6 +3017,7 @@ subsystems:
           - fs/overlayfs/
           - fs/proc/vmcore.c
           - fs/pstore/
+          - fs/smb/
           - fs/squashfs/
           - fs/xfs/
           - fs/proc/namespaces.c
@@ -2999,9 +3088,9 @@ subsystems:
      name: forcedeth
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ivan Vecera
@@ -3190,9 +3279,9 @@ subsystems:
      name: phy
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Petr Oros
@@ -3239,9 +3328,9 @@ subsystems:
      name: gnss
    status: Provided
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -3412,9 +3501,9 @@ subsystems:
      name: hippi
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -3452,9 +3541,6 @@ subsystems:
      - rhivos-ft-auto-kernel
    requiredApproval: false
    maintainers:
-     - name: Adrien Thierry
-       email: athierry@redhat.com
-       gluser: athierry1
      - name: Andrew Halaney
        email: ahalaney@redhat.com
        gluser: ahalaney
@@ -3634,9 +3720,9 @@ subsystems:
      name: ib
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Kamal Heib
@@ -3664,9 +3750,6 @@ subsystems:
      - name: Ivan Vecera
        email: ivecera@redhat.com
        gluser: ivecera
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
      - name: Izabela Bakollari
        email: ibakolla@redhat.com
        gluser: ibakolla
@@ -3773,9 +3856,9 @@ subsystems:
      name: e1000
    status: Provided
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    required-approval: false
    maintainers:
      - name: Ken Cox
@@ -3789,9 +3872,9 @@ subsystems:
      name: e1000e
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ken Cox
@@ -3805,9 +3888,9 @@ subsystems:
      name: ice
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Petr Oros
@@ -3835,9 +3918,6 @@ subsystems:
      - name: Ivan Vecera
        email: ivecera@redhat.com
        gluser: ivecera
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
      - name: Izabela Bakollari
        email: ibakolla@redhat.com
        gluser: ibakolla
@@ -3850,9 +3930,9 @@ subsystems:
      name: irdma
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Kamal Heib
@@ -3867,9 +3947,9 @@ subsystems:
      name: i40e
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ivan Vecera
@@ -3883,9 +3963,9 @@ subsystems:
      name: i40iw
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Stefan Assmann
@@ -3900,9 +3980,9 @@ subsystems:
      name: iavf
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Petr Oros
@@ -3920,9 +4000,9 @@ subsystems:
      name: igb
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Corinna Vinschen
@@ -3936,9 +4016,9 @@ subsystems:
      name: igbvf
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Corinna Vinschen
@@ -3952,9 +4032,9 @@ subsystems:
      name: igc
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Corinna Vinschen
@@ -3996,9 +4076,9 @@ subsystems:
      name: ixgbe
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ken Cox
@@ -4012,9 +4092,9 @@ subsystems:
      name: ixgbevf
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ken Cox
@@ -4275,9 +4355,9 @@ subsystems:
      name: isdn
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -4598,6 +4678,7 @@ subsystems:
           - fs/proc/vmcore.c
           - kernel/crash_*.c
           - kernel/kexec*
+          - kernel/Kconfig.kexec
           - arch/x86/kernel/machine_kexec_*.c
           - arch/x86/kernel/crash*.c
           - arch/x86/kernel/kexec-bzimage64.c
@@ -4747,6 +4828,7 @@ subsystems:
           - include/linux/seqlock.h
           - include/linux/spinlock*.h
           - lib/locking*.[ch]
+          - kernel/Kconfig.locks
           - kernel/locking/
  - subsystem: LSI 3ware SAS/SATA-RAID Linux Drive (3w-sas)
    labels:
@@ -4857,9 +4939,6 @@ subsystems:
      - rhel-sst-null
    requiredApproval: false
    maintainers:
-     - name: Adrien Thierry
-       email: athierry@redhat.com
-       gluser: athierry1
      - name: Andrew Halaney
        email: ahalaney@redhat.com
        gluser: ahalaney
@@ -4912,9 +4991,9 @@ subsystems:
      name: mlxsw
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ivan Vecera
@@ -4976,9 +5055,6 @@ subsystems:
      - name: Aristeu Rozanski
        email: arozansk@redhat.com
        gluser: arozansk
-     - name: Artem Savkov
-       email: asavkov@redhat.com
-       gluser: artem.savkov
      - name: Baoquan He
        email: bhe@redhat.com
        gluser: baoquan_he
@@ -5006,6 +5082,9 @@ subsystems:
      - name: Audra Mitchell
        email: aubaker@redhat.com
        gluser: aubaker
+     - name: David Hildenbrand
+       email: david@redhat.com
+       gluser: davidhildenbrand
    paths:
        includes:
           - arch/arm64/mm/
@@ -5128,9 +5207,9 @@ subsystems:
      name: mlx4
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Amir Tzin
@@ -5152,9 +5231,9 @@ subsystems:
      name: mlx4_ib
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Amir Tzin
@@ -5178,9 +5257,9 @@ subsystems:
      name: mlx5
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Amir Tzin
@@ -5203,9 +5282,9 @@ subsystems:
      name: mlx5_ib
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Amir Tzin
@@ -5248,6 +5327,7 @@ subsystems:
    status: Supported
    devel-sst:
      - rhel-sst-arch-hw
+     - rhel-sst-kernel-ft
    qe-sst:
      - rhel-sst-arch-hw
    requiredApproval: false
@@ -5255,6 +5335,16 @@ subsystems:
      - name: Prarit Bhargava
        email: prarit@redhat.com
        gluser: prarit
+   reviewers:
+     - name: Audra Mitchell
+       email: aubaker@redhat.com
+       gluser: aubaker
+     - name: Donald Dutile
+       email: ddutile@redhat.com
+       gluser: ddutile
+     - name: Rafael Aquini
+       email: aquini@redhat.com
+       gluser: raquini
    paths:
        includes:
           - kernel/module/
@@ -5284,9 +5374,9 @@ subsystems:
      name: myri10ge
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Jarod Wilson
@@ -5326,14 +5416,40 @@ subsystems:
           - kernel/user_namespace.c
           - tools/testing/selftests/pid_namespace/
           - tools/testing/selftests/rlimits/
+ - subsystem: NATIVE LANGUAGE SUPPORT
+   labels:
+     name: nls
+   status: Supported
+   devel-sst:
+     - rhel-sst-filesystems
+   qe-sst:
+     - rhel-sst-filesystems
+   requiredApproval: false
+   maintainers:
+     - name: Benjamin Coddington
+       email: bcodding@redhat.com
+       gluser: bcodding
+     - name: Jeffrey Layton
+       email: jlayton@redhat.com
+       gluser: jtlayton
+     - name: Steve Dickson
+       email: steved@redhat.com
+       gluser: steved92
+     - name: Scott Mayhew
+       email: smayhew@redhat.com
+       gluser: smayhew
+   paths:
+       includes:
+          - include/linux/nls.h
+          - fs/nls/
  - subsystem: NCSI (Network Controller Sideband Interface)
    labels:
      name: ncsi
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -5349,7 +5465,7 @@ subsystems:
        - lnst
    status: Supported
    devel-sst:
-     - rhel-sst-networking
+     - rhel-sst-networking-core
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
@@ -5406,7 +5522,7 @@ subsystems:
      name: dsa
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
@@ -5436,9 +5552,6 @@ subsystems:
      - name: Corinna Vinschen
        email: vinschen@redhat.com
        gluser: vinschen
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
      - name: Izabela Bakollari
        email: ibakolla@redhat.com
        gluser: ibakolla
@@ -5459,7 +5572,7 @@ subsystems:
      emailLabel: net
    status: Supported
    devel-sst:
-     - rhel-sst-networking
+     - rhel-sst-networking-core
    qe-sst:
      - rhel-sst-null
    requiredApproval: true
@@ -5637,6 +5750,7 @@ subsystems:
        excludes:
           - Documentation/networking/arcnet*
           - Documentation/networking/can.rst
+          - Documentation/networking/can_ucan_protocol.rst
           - Documentation/networking/device_drivers/
           - Documentation/networking/devlink/
           - Documentation/networking/dsa/
@@ -5735,7 +5849,7 @@ subsystems:
      emailLabel: net
    status: Supported
    devel-sst:
-     - rhel-sst-networking
+     - rhel-sst-networking-core
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
@@ -5770,6 +5884,7 @@ subsystems:
        gluser: jasowang
    paths:
        includes:
+          - Documentation/networking/tuntap.*
           - drivers/net/tap.c
           - drivers/net/tun.c
           - include/linux/if_tap.h
@@ -5780,9 +5895,9 @@ subsystems:
      name: netxen
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Manish Chopra
@@ -5800,9 +5915,9 @@ subsystems:
      name: nfc
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -5838,7 +5953,9 @@ subsystems:
        gluser: smayhew
    paths:
        includes:
+          - Documentation/filesystems/nfs/
           - fs/nfs/
+          - include/linux/nfs*.h
  - subsystem: NFS SERVER (nfsd)
    labels:
      name: nfsd
@@ -5864,6 +5981,7 @@ subsystems:
    paths:
        includes:
           - fs/nfsd/
+          - include/uapi/linux/nfsd/*
  - subsystem: NITRO ENCLAVES (NE)
    labels:
      name: ne
@@ -6051,9 +6169,9 @@ subsystems:
      name: nvme-rdma
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Kamal Heib
@@ -6101,9 +6219,9 @@ subsystems:
      name: opa
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Izabela Bakollari
@@ -6142,7 +6260,7 @@ subsystems:
        - lnst
    status: Supported
    devel-sst:
-     - rhel-sst-networking
+     - rhel-sst-network-fastdatapath
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
@@ -6283,9 +6401,9 @@ subsystems:
      name: pcs
    status: Provided
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Corinna Vinschen
@@ -6300,9 +6418,9 @@ subsystems:
      name: ionic
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Michal Schmidt
@@ -6334,6 +6452,9 @@ subsystems:
      - name: Cestmir Kalina
        email: ckalina@redhat.com
        gluser: ckalina
+     - name: Artem Savkov
+       email: asavkov@redhat.com
+       gluser: artem.savkov
    paths:
        includes:
           - kernel/events/
@@ -6351,9 +6472,9 @@ subsystems:
      name: phonet
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -6467,9 +6588,9 @@ subsystems:
      name: plip
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -6615,7 +6736,7 @@ subsystems:
      name: ptp
    status: Supported
    devel-sst:
-     - rhel-sst-networking
+     - rhel-sst-networking-core
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
@@ -6704,9 +6825,9 @@ subsystems:
      name: qed
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Manish Chopra
@@ -6724,9 +6845,9 @@ subsystems:
      name: qede
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Manish Chopra
@@ -6744,9 +6865,9 @@ subsystems:
      name: qedr
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Manish Chopra
@@ -6837,9 +6958,9 @@ subsystems:
      name: qla3xxx
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Manish Chopra
@@ -6858,9 +6979,9 @@ subsystems:
      name: qlcnic
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Manish Chopra
@@ -6878,9 +6999,9 @@ subsystems:
      name: qlge
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Manish Chopra
@@ -6898,14 +7019,14 @@ subsystems:
      name: qrtr
    status: Provided
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
    maintainers:
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
+     - name: José Ignacio Tornos Martínez
+       email: jtornosm@redhat.com
+       gluser: jtornosm
    reviewers:
      - name: Jarod Wilson
        email: jarod@redhat.com
@@ -6941,9 +7062,9 @@ subsystems:
      name: rapidio
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -7027,14 +7148,30 @@ subsystems:
           - include/linux/rtc/
           - include/uapi/linux/rtc.h
           - tools/testing/selftests/rtc/
+ - subsystem: REAL TIME SUBSYSTEM
+   labels:
+     name: rt
+   status: Supported
+   devel-sst:
+     - rhel-sst-kernel-rts
+   qe-sst:
+     - rhel-sst-kernel-rts
+   requiredApproval: false
+   maintainers:
+     - name: Clark Williams
+       email: williams@redhat.com
+       gluser: clrkwllms
+   paths:
+       includes:
+          - kernel/Kconfig.preempt
  - subsystem: Reliable Datagram Sockets Protocol
    labels:
      name: rds
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -7085,9 +7222,9 @@ subsystems:
      name: rocker
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ivan Vecera
@@ -7286,7 +7423,7 @@ subsystems:
        - lnst
    status: Supported
    devel-sst:
-     - rhel-sst-networking
+     - rhel-sst-networking-core
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
@@ -7422,14 +7559,14 @@ subsystems:
      name: sfc
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
+     - name: Izabela Bakollari
+       email: ibakolla@redhat.com
+       gluser: ibakolla
    reviewers:
      - name: Jarod Wilson
        email: jarod@redhat.com
@@ -7509,9 +7646,9 @@ subsystems:
      name: skge
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Michal Schmidt
@@ -7525,9 +7662,9 @@ subsystems:
      name: sky2
    status: Provided
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Jeremy Linton
@@ -7544,9 +7681,9 @@ subsystems:
      name: slip
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Michal Schmidt
@@ -7560,9 +7697,9 @@ subsystems:
      name: siw
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Kamal Heib
@@ -7577,9 +7714,9 @@ subsystems:
      name: rdma_rxe
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Kamal Heib
@@ -7673,9 +7810,6 @@ subsystems:
      - rhel-sst-null
    requiredApproval: false
    maintainers:
-     - name: Adrien Thierry
-       email: athierry@redhat.com
-       gluser: athierry1
      - name: Andrew Halaney
        email: ahalaney@redhat.com
        gluser: ahalaney
@@ -7728,9 +7862,9 @@ subsystems:
      name: staging
    status: Disabled
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    maintainers:
      - name: Michal Schmidt
        email: mschmidt@redhat.com
@@ -7743,9 +7877,9 @@ subsystems:
      name: stmicro
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Corinna Vinschen
@@ -7780,6 +7914,9 @@ subsystems:
    paths:
        includes:
           - net/sunrpc/
+          - include/linux/sunrpc/*
+          - include/uapi/linux/sunrpc/*
+          - include/trace/events/sunrpc.h
  - subsystem: SUSPEND/RESUME
    labels:
      name: sus_res
@@ -7801,9 +7938,9 @@ subsystems:
        - lnst
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Ivan Vecera
@@ -7838,7 +7975,7 @@ subsystems:
        - lnst
    status: Supported
    devel-sst:
-     - rhel-sst-networking
+     - rhel-sst-networking-core
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
@@ -7978,7 +8115,7 @@ subsystems:
        - lnst
    status: Provided
    devel-sst:
-     - rhel-sst-networking
+     - rhel-sst-networking-core
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
@@ -8096,9 +8233,6 @@ subsystems:
      - rhivos-ft-auto-kernel
    requiredApproval: false
    maintainers:
-     - name: Adrien Thierry
-       email: athierry@redhat.com
-       gluser: athierry1
      - name: Andrew Halaney
        email: ahalaney@redhat.com
        gluser: ahalaney
@@ -8117,9 +8251,9 @@ subsystems:
      name: usb_net
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: José Ignacio Tornos Martínez
@@ -8281,6 +8415,7 @@ subsystems:
           - include/net/af_vsock.h
           - include/net/vsock_addr.h
           - include/uapi/linux/virtio_vsock.h
+          - include/uapi/linux/vm_sockets_diag.h
           - include/uapi/linux/vsockmon.h
           - net/vmw_vsock/
           - drivers/net/vsockmon.c
@@ -8288,6 +8423,29 @@ subsystems:
           - drivers/vhost/vsock.h
        excludes:
           - net/vmw_vsock/hyperv*
+   mailingList: rhvirt-patches@redhat.com
+ - subsystem: VIRTIO BALLOON DRIVER
+   labels:
+     name: virtio_balloon
+   status: Supported
+   devel-sst:
+     - rhel-sst-virtualization-hwe
+   qe-sst:
+     - rhel-sst-virtualization-hwe
+   requiredApproval: false
+   maintainers:
+     - name: '"Michael S. Tsirkin"'
+       email: mst@redhat.com
+       gluser: mstredhat
+     - name: David Hildenbrand
+       email: david@redhat.com
+       gluser: davidhildenbrand
+   paths:
+       includes:
+          - drivers/virtio/virtio_balloon.c
+          - include/linux/balloon_compaction.h
+          - include/uapi/linux/virtio_balloon.h
+          - mm/balloon_compaction.c
    mailingList: rhvirt-patches@redhat.com
  - subsystem: VIRTIO CONSOLE DRIVER
    labels:
@@ -8339,7 +8497,6 @@ subsystems:
           - include/linux/vdpa.h
           - include/uapi/linux/virtio_*.h
           - drivers/crypto/virtio/
-          - mm/balloon_compaction.c
    mailingList: rhvirt-patches@redhat.com
  - subsystem: VIRTIO CRYPTO DRIVER
    labels:
@@ -8440,6 +8597,24 @@ subsystems:
           - include/uapi/linux/virtio_input.h
    mailingList: rhvirt-patches@redhat.com
    mailingList: rhvirt-patches@redhat.com
+ - subsystem: VIRTIO MEM DRIVER
+   labels:
+     name: virtio_mem
+   status: Supported
+   devel-sst:
+     - rhel-sst-virtualization-hwe
+   qe-sst:
+     - rhel-sst-virtualization-hwe
+   requiredApproval: false
+   maintainers:
+     - name: David Hildenbrand
+       email: david@redhat.com
+       gluser: davidhildenbrand
+   paths:
+       includes:
+          - drivers/virtio/virtio_mem.c
+          - include/uapi/linux/virtio_mem.h
+   mailingList: rhvirt-patches@redhat.com
  - subsystem: VIRTUALIZATION SUPPORT DRIVERS
    labels:
      name: virt_drivers
@@ -8485,9 +8660,9 @@ subsystems:
      name: vmw_pvrdma
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Kamal Heib
@@ -8502,9 +8677,9 @@ subsystems:
      name: vmxnet3
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-null
+     - rhel-sst-virtualization-cloud
    requiredApproval: false
    maintainers:
      - name: Izabela Bakollari
@@ -8563,9 +8738,9 @@ subsystems:
      name: wan
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: Michal Schmidt
@@ -8580,7 +8755,7 @@ subsystems:
      name: wireless
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
      - rhel-sst-arch-hw
    requiredApproval: true
@@ -8588,9 +8763,6 @@ subsystems:
      - name: José Ignacio Tornos Martínez
        email: jtornosm@redhat.com
        gluser: jtornosm
-     - name: Íñigo Huguet
-       email: ihuguet@redhat.com
-       gluser: ihuguet-rh
    reviewers:
      - name: Jarod Wilson
        email: jarod@redhat.com
@@ -8662,9 +8834,9 @@ subsystems:
      name: wwan
    status: Supported
    devel-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    qe-sst:
-     - rhel-sst-nic-rdma
+     - rhel-sst-network-drivers
    requiredApproval: false
    maintainers:
      - name: José Ignacio Tornos Martínez
@@ -8782,14 +8954,11 @@ subsystems:
        - lnst
    status: Supported
    devel-sst:
-     - rhel-sst-networking
+     - rhel-sst-networking-core
    qe-sst:
      - rhel-sst-null
    requiredApproval: false
    maintainers:
-     - name: Jesper Dangaard Brouer
-       email: brouer@redhat.com
-       gluser: netoptimizer
      - name: Jiri Benc
        email: jbenc@redhat.com
        gluser: jbencrh

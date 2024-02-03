@@ -102,18 +102,18 @@ if __name__ == "__main__":
             if zbugs:
                 entry += " ".join(sorted(zbugs))
                 all_zbzs.update(zbugs)
-            if bugs:
+            if zjiras:
                 entry += " " if zbugs else ""
+                entry += " ".join(sorted(zjiras))
+                all_zjiras.update(zjiras)
+            if bugs:
+                entry += " " if zbugs or zjiras else ""
                 entry += " ".join(sorted(bugs))
                 all_bzs.update(bugs)
             if jiras:
-                entry += " " if bugs or zbugs else ""
+                entry += " " if zbugs or bugs or zjiras else ""
                 entry += " ".join(sorted(jiras))
                 all_jiras.update(jiras)
-            if zjiras:
-                entry += " " if bugs or zbugs or jiras else ""
-                entry += " ".join(sorted(zjiras))
-                all_zjiras.update(zjiras)
             entry += "]"
         if cves:
             entry += " {" + " ".join(sorted(cves)) + "}"

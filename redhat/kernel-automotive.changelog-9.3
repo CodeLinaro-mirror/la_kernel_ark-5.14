@@ -1,3 +1,32 @@
+* Tue Aug 29 2023 Julio Faracco <jfaracco@redhat.com> [5.14.0-362.324.el9iv]
+- [automotive] build 5.14.0-362.324.el9iv
+- smb: client: fix null auth (Scott Mayhew) [2223247]
+- ice: Fix NULL pointer deref during VF reset (Petr Oros) [2217304]
+- gfs2: conversion deadlock do_promote bypass (Bob Peterson) [2226861]
+- gfs2: do_promote cleanup (Andreas Gruenbacher) [2226861]
+- scsi: lpfc: Remove reftag check in DIF paths (Paul Ely) [2227947]
+- scsi: lpfc: Modify when a node should be put in device recovery mode during RSCN (Paul Ely) [2227947]
+- scsi: lpfc: Make fabric zone discovery more robust when handling unsolicited LOGO (Paul Ely) [2227947]
+- scsi: lpfc: Set Establish Image Pair service parameter only for Target Functions (Paul Ely) [2227947]
+- scsi: lpfc: Revise ndlp kref handling for dev_loss_tmo_callbk and lpfc_drop_node (Paul Ely) [2227947]
+- scsi: lpfc: Qualify ndlp discovery state when processing RSCN (Paul Ely) [2227947]
+- ext4: drop dio overwrite only flag and associated warning (Brian Foster) [2228056]
+- sched/core: Add __always_inline to schedule_loop() (Crystal Wood) [2232098]
+- net: openvswitch: add misc error drop reasons (Adrian Moreno) [2232283]
+- net: openvswitch: add meter drop reason (Adrian Moreno) [2232283]
+- net: openvswitch: add explicit drop action (Adrian Moreno) [2232283]
+- net: openvswitch: add action error drop reason (Adrian Moreno) [2232283]
+- net: openvswitch: add last-action drop reason (Adrian Moreno) [2232283]
+- net/sched: cls_route: No longer copy tcf_result on update to avoid use-after-free (Davide Caratti) [2225513] {CVE-2023-4128}
+- net/sched: cls_fw: No longer copy tcf_result on update to avoid use-after-free (Davide Caratti) [2225513] {CVE-2023-4128}
+- net/sched: cls_u32: No longer copy tcf_result on update to avoid use-after-free (Davide Caratti) [2225513] {CVE-2023-4128}
+- x86/kasan: Populate shadow for shared chunk of the CPU entry area (Rafael Aquini) [2233699]
+- x86/kasan: Add helpers to align shadow addresses up and down (Rafael Aquini) [2233699]
+- x86/kasan: Rename local CPU_ENTRY_AREA variables to shorten names (Rafael Aquini) [2233699]
+- x86/mm: Populate KASAN shadow for entire per-CPU range of CPU entry area (Rafael Aquini) [2233699]
+- x86/mm: Recompute physical address for every page of per-CPU CEA mapping (Rafael Aquini) [2233699]
+Resolves: rhbz#2217304, rhbz#2223247, rhbz#2225513, rhbz#2226861, rhbz#2227947, rhbz#2228056, rhbz#2232098, rhbz#2232283, rhbz#2233699
+
 * Thu Aug 24 2023 Jarod Wilson <jarod@redhat.com> [5.14.0-361.323.el9iv]
 - [automotive] build 5.14.0-361.323.el9iv
 - watch_queue: Free the page array when watch_queue is dismantled (Carlos Maiolino) [2231268]

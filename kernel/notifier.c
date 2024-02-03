@@ -230,19 +230,6 @@ int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
 EXPORT_SYMBOL_GPL(atomic_notifier_call_chain);
 NOKPROBE_SYMBOL(atomic_notifier_call_chain);
 
-/**
- *	atomic_notifier_call_chain_is_empty - Check whether notifier chain is empty
- *	@nh: Pointer to head of the atomic notifier chain
- *
- *	Checks whether notifier chain is empty.
- *
- *	Returns true is notifier chain is empty, false otherwise.
- */
-bool atomic_notifier_call_chain_is_empty(struct atomic_notifier_head *nh)
-{
-	return !rcu_access_pointer(nh->head);
-}
-
 /*
  *	Blocking notifier chain routines.  All access to the chain is
  *	synchronized by an rwsem.
@@ -456,7 +443,6 @@ int raw_notifier_call_chain(struct raw_notifier_head *nh,
 }
 EXPORT_SYMBOL_GPL(raw_notifier_call_chain);
 
-#ifdef CONFIG_SRCU
 /*
  *	SRCU notifier chain routines.    Registration and unregistration
  *	use a mutex, and call_chain is synchronized by SRCU (no locks).
@@ -572,8 +558,6 @@ void srcu_init_notifier_head(struct srcu_notifier_head *nh)
 	nh->head = NULL;
 }
 EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
-
-#endif /* CONFIG_SRCU */
 
 static ATOMIC_NOTIFIER_HEAD(die_chain);
 

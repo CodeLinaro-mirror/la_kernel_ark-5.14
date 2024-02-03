@@ -51,6 +51,9 @@ struct efi __read_mostly efi = {
 #ifdef CONFIG_EFI_COCO_SECRET
 	.coco_secret		= EFI_INVALID_TABLE_ADDR,
 #endif
+#ifdef CONFIG_UNACCEPTED_MEMORY
+	.unaccepted		= EFI_INVALID_TABLE_ADDR,
+#endif
 };
 EXPORT_SYMBOL(efi);
 
@@ -217,7 +220,7 @@ static int generic_ops_register(void)
 		generic_ops.set_variable = efi.set_variable;
 		generic_ops.set_variable_nonblocking = efi.set_variable_nonblocking;
 	}
-	return efivars_register(&generic_efivars, &generic_ops);
+	return efivars_register(&generic_efivars, &generic_ops, efi_kobj);
 }
 
 static void generic_ops_unregister(void)
@@ -229,7 +232,7 @@ static void generic_ops_unregister(void)
 }
 
 #ifdef CONFIG_EFI_CUSTOM_SSDT_OVERLAYS
-#define EFIVAR_SSDT_NAME_MAX	16UL
+#define EFIVAR_SSDT_NAME_MAX	16
 static char efivar_ssdt[EFIVAR_SSDT_NAME_MAX] __initdata;
 static int __init efivar_ssdt_setup(char *str)
 {
@@ -246,64 +249,83 @@ static int __init efivar_ssdt_setup(char *str)
 }
 __setup("efivar_ssdt=", efivar_ssdt_setup);
 
+static __init int efivar_ssdt_iter(efi_char16_t *name, efi_guid_t vendor,
+				   unsigned long name_size, void *data)
+{
+	struct efivar_entry *entry;
+	struct list_head *list = data;
+	char utf8_name[EFIVAR_SSDT_NAME_MAX];
+	int limit = min_t(unsigned long, EFIVAR_SSDT_NAME_MAX, name_size);
+
+	ucs2_as_utf8(utf8_name, name, limit - 1);
+	if (strncmp(utf8_name, efivar_ssdt, limit) != 0)
+		return 0;
+
+	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
+	if (!entry)
+		return 0;
+
+	memcpy(entry->var.VariableName, name, name_size);
+	memcpy(&entry->var.VendorGuid, &vendor, sizeof(efi_guid_t));
+
+	efivar_entry_add(entry, list);
+
+	return 0;
+}
+
 static __init int efivar_ssdt_load(void)
 {
-	unsigned long name_size = 256;
-	efi_char16_t *name = NULL;
-	efi_status_t status;
-	efi_guid_t guid;
+	LIST_HEAD(entries);
+	struct efivar_entry *entry, *aux;
+	unsigned long size;
+	void *data;
+	int ret;
 
 	if (!efivar_ssdt[0])
 		return 0;
 
-	name = kzalloc(name_size, GFP_KERNEL);
-	if (!name)
-		return -ENOMEM;
+	ret = efivar_init(efivar_ssdt_iter, &entries, true, &entries);
 
-	for (;;) {
-		char utf8_name[EFIVAR_SSDT_NAME_MAX];
-		unsigned long data_size = 0;
-		void *data;
-		int limit;
+	list_for_each_entry_safe(entry, aux, &entries, list) {
+		pr_info("loading SSDT from variable %s-%pUl\n", efivar_ssdt,
+			&entry->var.VendorGuid);
 
-		status = efi.get_next_variable(&name_size, name, &guid);
-		if (status == EFI_NOT_FOUND) {
-			break;
-		} else if (status == EFI_BUFFER_TOO_SMALL) {
-			name = krealloc(name, name_size, GFP_KERNEL);
-			if (!name)
-				return -ENOMEM;
-			continue;
+		list_del(&entry->list);
+
+		ret = efivar_entry_size(entry, &size);
+		if (ret) {
+			pr_err("failed to get var size\n");
+			goto free_entry;
 		}
 
-		limit = min(EFIVAR_SSDT_NAME_MAX, name_size);
-		ucs2_as_utf8(utf8_name, name, limit - 1);
-		if (strncmp(utf8_name, efivar_ssdt, limit) != 0)
-			continue;
-
-		pr_info("loading SSDT from variable %s-%pUl\n", efivar_ssdt, &guid);
-
-		status = efi.get_variable(name, &guid, NULL, &data_size, NULL);
-		if (status != EFI_BUFFER_TOO_SMALL || !data_size)
-			return -EIO;
-
-		data = kmalloc(data_size, GFP_KERNEL);
-		if (!data)
-			return -ENOMEM;
-
-		status = efi.get_variable(name, &guid, NULL, &data_size, data);
-		if (status == EFI_SUCCESS) {
-			acpi_status ret = acpi_load_table(data, NULL);
-			if (ret)
-				pr_err("failed to load table: %u\n", ret);
-			else
-				continue;
-		} else {
-			pr_err("failed to get var data: 0x%lx\n", status);
+		data = kmalloc(size, GFP_KERNEL);
+		if (!data) {
+			ret = -ENOMEM;
+			goto free_entry;
 		}
+
+		ret = efivar_entry_get(entry, NULL, &size, data);
+		if (ret) {
+			pr_err("failed to get var data\n");
+			goto free_data;
+		}
+
+		ret = acpi_load_table(data, NULL);
+		if (ret) {
+			pr_err("failed to load table: %d\n", ret);
+			goto free_data;
+		}
+
+		goto free_entry;
+
+free_data:
 		kfree(data);
+
+free_entry:
+		kfree(entry);
 	}
-	return 0;
+
+	return ret;
 }
 #else
 static inline int efivar_ssdt_load(void) { return 0; }
@@ -559,8 +581,8 @@ static const efi_config_table_type_t common_tables[] __initconst = {
 #ifdef CONFIG_EFI_COCO_SECRET
 	{LINUX_EFI_COCO_SECRET_AREA_GUID,	&efi.coco_secret,	"CocoSecret"	},
 #endif
-#ifdef CONFIG_EFI_GENERIC_STUB
-	{LINUX_EFI_SCREEN_INFO_TABLE_GUID,	&screen_info_table			},
+#ifdef CONFIG_UNACCEPTED_MEMORY
+	{LINUX_EFI_UNACCEPTED_MEM_TABLE_GUID,	&efi.unaccepted,	"Unaccepted"	},
 #endif
 	{},
 };
@@ -582,6 +604,34 @@ static __init int match_config_table(const efi_guid_t *guid,
 	}
 
 	return 0;
+}
+
+/**
+ * reserve_unaccepted - Map and reserve unaccepted configuration table
+ * @unaccepted: Pointer to unaccepted memory table
+ *
+ * memblock_add() makes sure that the table is mapped in direct mapping. During
+ * normal boot it happens automatically because the table is allocated from
+ * usable memory. But during crashkernel boot only memory specifically reserved
+ * for crash scenario is mapped. memblock_add() forces the table to be mapped
+ * in crashkernel case.
+ *
+ * Align the range to the nearest page borders. Ranges smaller than page size
+ * are not going to be mapped.
+ *
+ * memblock_reserve() makes sure that future allocations will not touch the
+ * table.
+ */
+
+static __init void reserve_unaccepted(struct efi_unaccepted_memory *unaccepted)
+{
+	phys_addr_t start, size;
+
+	start = PAGE_ALIGN_DOWN(efi.unaccepted);
+	size = PAGE_ALIGN(sizeof(*unaccepted) + unaccepted->size);
+
+	memblock_add(start, size);
+	memblock_reserve(start, size);
 }
 
 int __init efi_config_parse_tables(const efi_config_table_t *config_tables,
@@ -706,6 +756,23 @@ int __init efi_config_parse_tables(const efi_config_table_t *config_tables,
 		}
 	}
 
+	if (IS_ENABLED(CONFIG_UNACCEPTED_MEMORY) &&
+	    efi.unaccepted != EFI_INVALID_TABLE_ADDR) {
+		struct efi_unaccepted_memory *unaccepted;
+
+		unaccepted = early_memremap(efi.unaccepted, sizeof(*unaccepted));
+		if (unaccepted) {
+
+			if (unaccepted->version == 1) {
+				reserve_unaccepted(unaccepted);
+			} else {
+				efi.unaccepted = EFI_INVALID_TABLE_ADDR;
+			}
+
+			early_memunmap(unaccepted, sizeof(*unaccepted));
+		}
+	}
+
 	return 0;
 }
 
@@ -797,6 +864,7 @@ static __initdata char memory_type_name[][13] = {
 	"MMIO Port",
 	"PAL Code",
 	"Persistent",
+	"Unaccepted",
 };
 
 char * __init efi_md_typeattr_format(char *buf, size_t size,
@@ -997,7 +1065,6 @@ efi_status_to_str(efi_status_t status)
 		return "Unknown error code";
 	return found->description;
 }
-EXPORT_SYMBOL_GPL(efi_status_to_err);
 
 static DEFINE_SPINLOCK(efi_mem_reserve_persistent_lock);
 static struct linux_efi_memreserve *efi_memreserve_root __ro_after_init;

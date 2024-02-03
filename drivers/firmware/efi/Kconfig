@@ -2,6 +2,18 @@
 menu "EFI (Extensible Firmware Interface) Support"
 	depends on EFI
 
+config EFI_VARS
+	tristate "EFI Variable Support via sysfs"
+	depends on EFI && (X86 || IA64)
+	default n
+	help
+	  If you say Y here, you are able to get EFI (Extensible Firmware
+	  Interface) variable information via sysfs.  You may read,
+	  write, create, and destroy EFI variables through this interface.
+	  Note that this driver is only retained for compatibility with
+	  legacy users: new users should use the efivarfs filesystem
+	  instead.
+
 config EFI_ESRT
 	bool
 	depends on EFI && !IA64
@@ -10,7 +22,6 @@ config EFI_ESRT
 config EFI_VARS_PSTORE
 	tristate "Register efivars backend for pstore"
 	depends on PSTORE
-	select UCS2_STRING
 	default y
 	help
 	  Say Y here to enable use efivars as a backend to pstore. This
@@ -119,7 +130,6 @@ config EFI_ARMSTUB_DTB_LOADER
 
 config EFI_BOOTLOADER_CONTROL
 	tristate "EFI Bootloader Control"
-	select UCS2_STRING
 	default n
 	help
 	  This module installs a reboot hook, such that if reboot() is
@@ -279,6 +289,20 @@ config EFI_COCO_SECRET
 	  for usage inside the kernel.  This will allow the
 	  virt/coco/efi_secret module to access the secrets, which in turn
 	  allows userspace programs to access the injected secrets.
+
+config UNACCEPTED_MEMORY
+	bool
+	depends on EFI_STUB
+	help
+	   Some Virtual Machine platforms, such as Intel TDX, require
+	   some memory to be "accepted" by the guest before it can be used.
+	   This mechanism helps prevent malicious hosts from making changes
+	   to guest memory.
+
+	   UEFI specification v2.9 introduced EFI_UNACCEPTED_MEMORY memory type.
+
+	   This option adds support for unaccepted memory and makes such memory
+	   usable by the kernel.
 
 config EFI_EMBEDDED_FIRMWARE
 	bool

@@ -18,7 +18,6 @@
 #include <linux/ethtool.h>
 #include <linux/topology.h>
 #include <linux/gfp.h>
-#include <linux/aer.h>
 #include <linux/interrupt.h>
 #include "net_driver.h"
 #include <net/gre.h>
@@ -797,12 +796,6 @@ static const struct pci_device_id efx_pci_table[] = {
 	{0}			/* end of list */
 };
 
-static const struct pci_device_id efx_unmaintained_pci_table[] = {
-	{PCI_DEVICE(PCI_VENDOR_ID_SOLARFLARE, 0x0803)},	/* SFC9020 */
-	{PCI_DEVICE(PCI_VENDOR_ID_SOLARFLARE, 0x0813)},	/* SFL9021 */
-	{0}
-};
-
 /**************************************************************************
  *
  * Data housekeeping
@@ -880,8 +873,6 @@ static void efx_pci_remove(struct pci_dev *pci_dev)
 
 	efx_siena_fini_struct(efx);
 	free_netdev(efx->net_dev);
-
-	pci_disable_pcie_error_reporting(pci_dev);
 };
 
 /* NIC VPD information
@@ -1061,8 +1052,6 @@ static int efx_pci_probe(struct pci_dev *pci_dev,
 	if (!efx->type->is_vf)
 		efx_probe_vpd_strings(efx);
 
-	pci_hw_unmaintained(efx_unmaintained_pci_table, pci_dev);
-
 	/* Set up basic I/O (BAR mappings etc) */
 	rc = efx_siena_init_io(efx, efx->type->mem_bar(efx),
 			       efx->type->max_dma_mask,
@@ -1101,8 +1090,6 @@ static int efx_pci_probe(struct pci_dev *pci_dev,
 	if (rc && rc != -EPERM)
 		netif_warn(efx, probe, efx->net_dev,
 			   "failed to create MTDs (%d)\n", rc);
-
-	(void)pci_enable_pcie_error_reporting(pci_dev);
 
 	if (efx->type->udp_tnl_push_ports)
 		efx->type->udp_tnl_push_ports(efx);

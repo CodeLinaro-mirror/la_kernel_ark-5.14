@@ -13,6 +13,7 @@
 
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
+#include <drm/drm_cache.h>
 #include <drm/drm_damage_helper.h>
 #include <drm/drm_format_helper.h>
 #include <drm/drm_fourcc.h>
@@ -436,6 +437,13 @@ static void mgag200_handle_damage(struct mga_device *mdev, const struct iosys_ma
 
 	iosys_map_incr(&dst, drm_fb_clip_offset(fb->pitches[0], fb->format, clip));
 	drm_fb_memcpy(&dst, fb->pitches, vmap, fb, clip);
+
+	/* Flushing the cache greatly improves latency on x86_64 */
+#if defined(CONFIG_X86) && defined(CONFIG_PREEMPT_RT)
+	if (!vmap->is_iomem)
+		drm_clflush_virt_range(vmap->vaddr + clip->y1 * fb->pitches[0],
+				       drm_rect_height(clip) * fb->pitches[0]);
+#endif
 }
 
 /*
@@ -501,10 +509,6 @@ void mgag200_primary_plane_helper_atomic_update(struct drm_plane *plane,
 	struct drm_framebuffer *fb = plane_state->fb;
 	struct drm_atomic_helper_damage_iter iter;
 	struct drm_rect damage;
-	u8 seq1;
-
-	if (!fb)
-		return;
 
 	drm_atomic_helper_damage_iter_init(&iter, old_plane_state, plane_state);
 	drm_atomic_for_each_plane_damage(&iter, &damage) {
@@ -514,13 +518,19 @@ void mgag200_primary_plane_helper_atomic_update(struct drm_plane *plane,
 	/* Always scanout image at VRAM offset 0 */
 	mgag200_set_startadd(mdev, (u32)0);
 	mgag200_set_offset(mdev, fb);
+}
 
-	if (!old_plane_state->crtc && plane_state->crtc) { // enabling
-		RREG_SEQ(0x01, seq1);
-		seq1 &= ~MGAREG_SEQ1_SCROFF;
-		WREG_SEQ(0x01, seq1);
-		msleep(20);
-	}
+void mgag200_primary_plane_helper_atomic_enable(struct drm_plane *plane,
+						struct drm_atomic_state *state)
+{
+	struct drm_device *dev = plane->dev;
+	struct mga_device *mdev = to_mga_device(dev);
+	u8 seq1;
+
+	RREG_SEQ(0x01, seq1);
+	seq1 &= ~MGAREG_SEQ1_SCROFF;
+	WREG_SEQ(0x01, seq1);
+	msleep(20);
 }
 
 void mgag200_primary_plane_helper_atomic_disable(struct drm_plane *plane,

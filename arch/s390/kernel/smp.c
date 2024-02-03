@@ -55,6 +55,7 @@
 #include <asm/stacktrace.h>
 #include <asm/topology.h>
 #include <asm/vdso.h>
+#include <asm/maccess.h>
 #include "entry.h"
 
 enum {
@@ -552,7 +553,7 @@ void arch_send_call_function_single_ipi(int cpu)
  * it goes straight through and wastes no time serializing
  * anything. Worst case is that we lose a reschedule ...
  */
-void smp_send_reschedule(int cpu)
+void arch_smp_send_reschedule(int cpu)
 {
 	pcpu_ec_call(pcpu_devices + cpu, ec_schedule);
 }
@@ -1069,11 +1070,9 @@ static ssize_t cpu_configure_store(struct device *dev,
 	cpus_read_lock();
 	mutex_lock(&smp_cpu_state_mutex);
 	rc = -EBUSY;
-	/* disallow configuration changes of online cpus and cpu 0 */
+	/* disallow configuration changes of online cpus */
 	cpu = dev->id;
 	cpu = smp_get_base_cpu(cpu);
-	if (cpu == 0)
-		goto out;
 	for (i = 0; i <= smp_cpu_mtid; i++)
 		if (cpu_online(cpu + i))
 			goto out;
@@ -1173,7 +1172,7 @@ static int smp_add_present_cpu(int cpu)
 		return -ENOMEM;
 	per_cpu(cpu_device, cpu) = c;
 	s = &c->dev;
-	c->hotpluggable = 1;
+	c->hotpluggable = !!cpu;
 	rc = register_cpu(c, cpu);
 	if (rc)
 		goto out;
@@ -1227,11 +1226,17 @@ static DEVICE_ATTR_WO(rescan);
 
 static int __init s390_smp_init(void)
 {
+	struct device *dev_root;
 	int cpu, rc = 0;
 
-	rc = device_create_file(cpu_subsys.dev_root, &dev_attr_rescan);
-	if (rc)
-		return rc;
+	dev_root = bus_get_dev_root(&cpu_subsys);
+	if (dev_root) {
+		rc = device_create_file(dev_root, &dev_attr_rescan);
+		put_device(dev_root);
+		if (rc)
+			return rc;
+	}
+
 	for_each_present_cpu(cpu) {
 		rc = smp_add_present_cpu(cpu);
 		if (rc)
