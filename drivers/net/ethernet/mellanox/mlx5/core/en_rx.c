@@ -36,7 +36,7 @@
 #include <linux/bitmap.h>
 #include <linux/filter.h>
 #include <net/ip6_checksum.h>
-#include <net/page_pool.h>
+#include <net/page_pool/helpers.h>
 #include <net/inet_ecn.h>
 #include <net/gro.h>
 #include <net/udp.h>
@@ -1556,7 +1556,7 @@ struct sk_buff *mlx5e_build_linear_skb(struct mlx5e_rq *rq, void *va,
 				       u32 frag_size, u16 headroom,
 				       u32 cqe_bcnt, u32 metasize)
 {
-	struct sk_buff *skb = napi_build_skb(va, frag_size);
+	struct sk_buff *skb = build_skb(va, frag_size);
 
 	if (unlikely(!skb)) {
 		rq->stats->buff_alloc_err++;
@@ -1683,9 +1683,8 @@ mlx5e_skb_from_cqe_nonlinear(struct mlx5e_rq *rq, struct mlx5e_wqe_frag_info *wi
 		}
 
 		frag = &sinfo->frags[sinfo->nr_frags++];
-		__skb_frag_set_page(frag, au->page);
-		skb_frag_off_set(frag, wi->offset);
-		skb_frag_size_set(frag, frag_consumed_bytes);
+		skb_frag_fill_page_desc(frag, au->page, wi->offset,
+					frag_consumed_bytes);
 
 		if (page_is_pfmemalloc(au->page))
 			xdp_buff_set_frag_pfmemalloc(&mxbuf.xdp);

@@ -121,17 +121,6 @@ jiffies = jiffies_64;
 #define TRAMP_TEXT
 #endif
 
-#ifdef CONFIG_UNWIND_TABLES
-#define UNWIND_DATA_SECTIONS				\
-	.eh_frame : {					\
-		__eh_frame_start = .;			\
-		*(.eh_frame)				\
-		__eh_frame_end = .;			\
-	}
-#else
-#define UNWIND_DATA_SECTIONS
-#endif
-
 /*
  * The size of the PE/COFF section that covers the kernel image, which
  * runs from _stext to _edata, must be a round multiple of the PE/COFF
@@ -178,7 +167,6 @@ SECTIONS
 			LOCK_TEXT
 			KPROBES_TEXT
 			HYPERVISOR_TEXT
-			IDMAP_TEXT
 			*(.gnu.warning)
 		. = ALIGN(16);
 		*(.got)			/* Global offset table		*/
@@ -205,6 +193,7 @@ SECTIONS
 		TRAMP_TEXT
 		HIBERNATE_TEXT
 		KEXEC_TEXT
+		IDMAP_TEXT
 		. = ALIGN(PAGE_SIZE);
 	}
 
@@ -240,8 +229,6 @@ SECTIONS
 		*(.altinstructions)
 		__alt_instructions_end = .;
 	}
-
-	UNWIND_DATA_SECTIONS
 
 	. = ALIGN(SEGMENT_ALIGN);
 	__inittext_end = .;

@@ -470,6 +470,11 @@ restart:
 	 * required to change security info in file_modified(), for extending
 	 * I/O, any form of non-overwrite I/O, and unaligned I/O to unwritten
 	 * extents (as partial block zeroing may be required).
+	 *
+	 * Note that unaligned writes are allowed under shared lock so long as
+	 * they are pure overwrites. Otherwise, concurrent unaligned writes risk
+	 * data corruption due to partial block zeroing in the dio layer, and so
+	 * the I/O must occur exclusively.
 	 */
 	if (*ilock_shared &&
 	    ((!IS_NOSEC(inode) || *extend || !overwrite ||
@@ -486,21 +491,12 @@ restart:
 
 	/*
 	 * Now that locking is settled, determine dio flags and exclusivity
-	 * requirements. Unaligned writes are allowed under shared lock so long
-	 * as they are pure overwrites. Set the iomap overwrite only flag as an
-	 * added precaution in this case. Even though this is unnecessary, we
-	 * can detect and warn on unexpected -EAGAIN if an unsafe unaligned
-	 * write is ever submitted.
-	 *
-	 * Otherwise, concurrent unaligned writes risk data corruption due to
-	 * partial block zeroing in the dio layer, and so the I/O must occur
-	 * exclusively. The inode lock is already held exclusive if the write is
-	 * non-overwrite or extending, so drain all outstanding dio and set the
-	 * force wait dio flag.
+	 * requirements. We don't use DIO_OVERWRITE_ONLY because we enforce
+	 * behavior already. The inode lock is already held exclusive if the
+	 * write is non-overwrite or extending, so drain all outstanding dio and
+	 * set the force wait dio flag.
 	 */
-	if (*ilock_shared && unaligned_io) {
-		*dio_flags = IOMAP_DIO_OVERWRITE_ONLY;
-	} else if (!*ilock_shared && (unaligned_io || *extend)) {
+	if (!*ilock_shared && (unaligned_io || *extend)) {
 		if (iocb->ki_flags & IOCB_NOWAIT) {
 			ret = -EAGAIN;
 			goto out;
@@ -567,17 +563,19 @@ static ssize_t ext4_dio_write_iter(struct kiocb *iocb, struct iov_iter *from)
 		return ext4_buffered_write_iter(iocb, from);
 	}
 
+	/*
+	 * Prevent inline data from being created since we are going to allocate
+	 * blocks for DIO. We know the inode does not currently have inline data
+	 * because ext4_should_use_dio() checked for it, but we have to clear
+	 * the state flag before the write checks because a lock cycle could
+	 * introduce races with other writers.
+	 */
+	ext4_clear_inode_state(inode, EXT4_STATE_MAY_INLINE_DATA);
+
 	ret = ext4_dio_write_checks(iocb, from, &ilock_shared, &extend,
 				    &unwritten, &dio_flags);
 	if (ret <= 0)
 		return ret;
-
-	/*
-	 * Make sure inline data cannot be created anymore since we are going
-	 * to allocate blocks for DIO. We know the inode does not have any
-	 * inline data now because ext4_dio_supported() checked for that.
-	 */
-	ext4_clear_inode_state(inode, EXT4_STATE_MAY_INLINE_DATA);
 
 	offset = iocb->ki_pos;
 	count = ret;
@@ -602,7 +600,6 @@ static ssize_t ext4_dio_write_iter(struct kiocb *iocb, struct iov_iter *from)
 		iomap_ops = &ext4_iomap_overwrite_ops;
 	ret = iomap_dio_rw(iocb, from, iomap_ops, &ext4_dio_write_ops,
 			   dio_flags, 0);
-	WARN_ON_ONCE(ret == -EAGAIN && !(iocb->ki_flags & IOCB_NOWAIT));
 	if (ret == -ENOTBLK)
 		ret = 0;
 
@@ -905,7 +902,8 @@ static int ext4_file_open(struct inode *inode, struct file *filp)
 			return ret;
 	}
 
-	filp->f_mode |= FMODE_NOWAIT | FMODE_BUF_RASYNC;
+	filp->f_mode |= FMODE_NOWAIT | FMODE_BUF_RASYNC |
+			FMODE_DIO_PARALLEL_WRITE;
 	return dquot_file_open(inode, filp);
 }
 

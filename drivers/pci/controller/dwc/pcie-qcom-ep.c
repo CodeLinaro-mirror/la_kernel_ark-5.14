@@ -21,6 +21,7 @@
 #include <linux/regmap.h>
 #include <linux/reset.h>
 #include <linux/module.h>
+#include <linux/of_device.h>
 
 #include "pcie-designware.h"
 
@@ -45,6 +46,7 @@
 #define PARF_DBI_BASE_ADDR_HI			0x354
 #define PARF_SLV_ADDR_SPACE_SIZE		0x358
 #define PARF_SLV_ADDR_SPACE_SIZE_HI		0x35c
+#define PCIE_PARF_NO_SNOOP_OVERIDE		0x3d4
 #define PARF_ATU_BASE_ADDR			0x634
 #define PARF_ATU_BASE_ADDR_HI			0x638
 #define PARF_SRIS_MODE				0x644
@@ -83,6 +85,10 @@
 #define PARF_DEBUG_INT_CFG_BUS_MASTER_EN	BIT(2)
 #define PARF_DEBUG_INT_RADM_PM_TURNOFF		BIT(3)
 
+/* PARF_NO_SNOOP_OVERIDE register fields */
+#define WR_NO_SNOOP_OVERIDE_EN                 BIT(1)
+#define RD_NO_SNOOP_OVERIDE_EN                 BIT(3)
+
 /* PARF_DEVICE_TYPE register fields */
 #define PARF_DEVICE_TYPE_EP			0x0
 
@@ -119,6 +125,24 @@
 /* PARF_CFG_BITS register fields */
 #define PARF_CFG_BITS_REQ_EXIT_L1SS_MSI_LTR_EN	BIT(1)
 
+#define GEN3_EQ_CONTROL_OFF			0x8a8
+#define GEN3_EQ_CONTROL_OFF_FB_MODE_MASK        GENMASK(3, 0)
+#define GEN3_EQ_CONTROL_OFF_PHASE23_EXIT_MODE   BIT(4)
+#define GEN3_EQ_CONTROL_OFF_PSET_REQ_VEC_MASK	GENMASK(23, 8)
+#define GEN3_EQ_CONTROL_OFF_FOM_INC_INITIAL_EVAL	BIT(24)
+
+#define GEN3_EQ_FB_MODE_DIR_CHANGE_OFF          0x8ac
+#define GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_VAL   0x5
+#define GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_VAL  0x5
+#define GEN3_EQ_FMDC_N_EVALS_VAL          0xD
+#define GEN3_EQ_FMDC_T_MIN_PHASE23_MASK         GENMASK(4, 0)
+#define GEN3_EQ_FMDC_N_EVALS_MASK               GENMASK(9, 5)
+#define GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_MASK  GENMASK(13, 10)
+#define GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_MASK	GENMASK(17, 14)
+#define GEN3_EQ_FMDC_N_EVALS_SHIFT			5
+#define GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_SHIFT		10
+#define GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_SHIFT	14
+
 /* ELBI registers */
 #define ELBI_SYS_STTS				0x08
 
@@ -142,6 +166,10 @@ enum qcom_pcie_ep_link_status {
 	QCOM_PCIE_EP_LINK_DOWN,
 };
 
+struct qcom_pcie_ep_cfg {
+	bool no_snoop_overide;
+};
+
 /**
  * struct qcom_pcie_ep - Qualcomm PCIe Endpoint Controller
  * @pci: Designware PCIe controller struct
@@ -159,6 +187,7 @@ enum qcom_pcie_ep_link_status {
  * @num_clks: PCIe clocks count
  * @perst_en: Flag for PERST enable
  * @perst_sep_en: Flag for PERST separation enable
+ * @cfg: PCIe EP config struct
  * @link_status: PCIe Link status
  * @global_irq: Qualcomm PCIe specific Global IRQ
  * @perst_irq: PERST# IRQ
@@ -184,6 +213,7 @@ struct qcom_pcie_ep {
 	u32 perst_en;
 	u32 perst_sep_en;
 
+	const struct qcom_pcie_ep_cfg *cfg;
 	enum qcom_pcie_ep_link_status link_status;
 	int global_irq;
 	int perst_irq;
@@ -292,6 +322,37 @@ static void qcom_pcie_disable_resources(struct qcom_pcie_ep *pcie_ep)
 	phy_power_off(pcie_ep->phy);
 	phy_exit(pcie_ep->phy);
 	clk_bulk_disable_unprepare(pcie_ep->num_clks, pcie_ep->clks);
+}
+
+static void qcom_pcie_set_gen4_eq_presets(struct dw_pcie* pci)
+{
+	u32 reg;
+
+	reg = dw_pcie_readl_dbi(pci, GEN3_RELATED_OFF);
+	reg &= ~GEN3_RELATED_OFF_GEN3_ZRXDC_NONCOMPL;
+	reg &= ~GEN3_RELATED_OFF_RATE_SHADOW_SEL_MASK;
+	reg |= (0x1 << GEN3_RELATED_OFF_RATE_SHADOW_SEL_SHIFT);
+	dw_pcie_writel_dbi(pci, GEN3_RELATED_OFF, reg);
+
+	reg = dw_pcie_readl_dbi(pci,GEN3_EQ_FB_MODE_DIR_CHANGE_OFF);
+	reg &= ~GEN3_EQ_FMDC_T_MIN_PHASE23_MASK;
+	reg &= ~GEN3_EQ_FMDC_N_EVALS_MASK;
+	reg |= (GEN3_EQ_FMDC_N_EVALS_VAL <<
+		GEN3_EQ_FMDC_N_EVALS_SHIFT);
+	reg &= ~GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_MASK;
+	reg |= (GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_VAL <<
+		GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_SHIFT);
+	reg &= ~GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_MASK;
+	reg |= (GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_VAL <<
+		GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_SHIFT);
+	dw_pcie_writel_dbi(pci, GEN3_EQ_FB_MODE_DIR_CHANGE_OFF, reg);
+
+	reg = dw_pcie_readl_dbi(pci, GEN3_EQ_CONTROL_OFF);
+	reg &= ~GEN3_EQ_CONTROL_OFF_FB_MODE_MASK;
+	reg &= ~GEN3_EQ_CONTROL_OFF_PHASE23_EXIT_MODE;
+	reg &= ~GEN3_EQ_CONTROL_OFF_FOM_INC_INITIAL_EVAL;
+	reg &= ~GEN3_EQ_CONTROL_OFF_PSET_REQ_VEC_MASK;
+	dw_pcie_writel_dbi(pci, GEN3_EQ_CONTROL_OFF, reg);
 }
 
 static int qcom_pcie_perst_deassert(struct dw_pcie *pci)
@@ -404,6 +465,10 @@ static int qcom_pcie_perst_deassert(struct dw_pcie *pci)
 		goto err_disable_resources;
 	}
 
+	if(pci->link_gen == 0x4) {
+		qcom_pcie_set_gen4_eq_presets(pci);
+	}
+
 	/*
 	 * The physical address of the MMIO region which is exposed as the BAR
 	 * should be written to MHI BASE registers.
@@ -423,6 +488,11 @@ static int qcom_pcie_perst_deassert(struct dw_pcie *pci)
 	val = readl_relaxed(pcie_ep->parf + PARF_LTSSM);
 	val |= BIT(8);
 	writel_relaxed(val, pcie_ep->parf + PARF_LTSSM);
+
+	/* Enable cache snooping for SA8775P */
+	if (pcie_ep->cfg && pcie_ep->cfg->no_snoop_overide)
+		writel_relaxed(WR_NO_SNOOP_OVERIDE_EN | RD_NO_SNOOP_OVERIDE_EN,
+				pcie_ep->parf + PCIE_PARF_NO_SNOOP_OVERIDE);
 
 	return 0;
 
@@ -444,7 +514,12 @@ static void qcom_pcie_perst_assert(struct dw_pcie *pci)
 
 	qcom_pcie_disable_resources(pcie_ep);
 	pcie_ep->link_status = QCOM_PCIE_EP_LINK_DISABLED;
+
 }
+
+static const struct qcom_pcie_ep_cfg cfg_1_34_0 = {
+	.no_snoop_overide = true,
+};
 
 /* Common DWC controller ops */
 static const struct dw_pcie_ops pci_ops = {
@@ -569,9 +644,11 @@ static irqreturn_t qcom_pcie_ep_global_irq_thread(int irq, void *data)
 	if (FIELD_GET(PARF_INT_ALL_LINK_DOWN, status)) {
 		dev_dbg(dev, "Received Linkdown event\n");
 		pcie_ep->link_status = QCOM_PCIE_EP_LINK_DOWN;
+		pci_epc_linkdown(pci->ep.epc);
 	} else if (FIELD_GET(PARF_INT_ALL_BME, status)) {
 		dev_dbg(dev, "Received BME event. Link is enabled!\n");
 		pcie_ep->link_status = QCOM_PCIE_EP_LINK_ENABLED;
+		pci_epc_bme_notify(pci->ep.epc);
 	} else if (FIELD_GET(PARF_INT_ALL_PM_TURNOFF, status)) {
 		dev_dbg(dev, "Received PM Turn-off event! Entering L23\n");
 		val = readl_relaxed(pcie_ep->parf + PARF_PM_CTRL);
@@ -704,6 +781,7 @@ static const struct pci_epc_features qcom_pcie_epc_features = {
 	.core_init_notifier = true,
 	.msi_capable = true,
 	.msix_capable = false,
+	.align = SZ_4K,
 };
 
 static const struct pci_epc_features *
@@ -742,16 +820,11 @@ static int qcom_pcie_ep_probe(struct platform_device *pdev)
 	pcie_ep->pci.ops = &pci_ops;
 	pcie_ep->pci.ep.ops = &pci_ep_ops;
 	platform_set_drvdata(pdev, pcie_ep);
+	pcie_ep->cfg = of_device_get_match_data(dev);
 
 	ret = qcom_pcie_ep_get_resources(pdev, pcie_ep);
 	if (ret)
 		return ret;
-
-	ret = qcom_pcie_enable_resources(pcie_ep);
-	if (ret) {
-		dev_err(dev, "Failed to enable resources: %d\n", ret);
-		return ret;
-	}
 
 	ret = dw_pcie_ep_init(&pcie_ep->pci.ep);
 	if (ret) {
@@ -784,7 +857,7 @@ err_disable_resources:
 	return ret;
 }
 
-static int qcom_pcie_ep_remove(struct platform_device *pdev)
+static void qcom_pcie_ep_remove(struct platform_device *pdev)
 {
 	struct qcom_pcie_ep *pcie_ep = platform_get_drvdata(pdev);
 
@@ -794,14 +867,13 @@ static int qcom_pcie_ep_remove(struct platform_device *pdev)
 	debugfs_remove_recursive(pcie_ep->debugfs);
 
 	if (pcie_ep->link_status == QCOM_PCIE_EP_LINK_DISABLED)
-		return 0;
+		return;
 
 	qcom_pcie_disable_resources(pcie_ep);
-
-	return 0;
 }
 
 static const struct of_device_id qcom_pcie_ep_match[] = {
+	{ .compatible = "qcom,sa8775p-pcie-ep", .data = &cfg_1_34_0},
 	{ .compatible = "qcom,sdx55-pcie-ep", },
 	{ .compatible = "qcom,sm8450-pcie-ep", },
 	{ }
@@ -810,7 +882,7 @@ MODULE_DEVICE_TABLE(of, qcom_pcie_ep_match);
 
 static struct platform_driver qcom_pcie_ep_driver = {
 	.probe	= qcom_pcie_ep_probe,
-	.remove = qcom_pcie_ep_remove,
+	.remove_new = qcom_pcie_ep_remove,
 	.driver	= {
 		.name = "qcom-pcie-ep",
 		.of_match_table	= qcom_pcie_ep_match,

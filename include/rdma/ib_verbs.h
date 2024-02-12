@@ -2213,6 +2213,7 @@ struct ib_port_data {
 	struct ib_port_cache cache;
 
 	struct net_device __rcu *netdev;
+	netdevice_tracker netdev_tracker;
 	struct hlist_node ndev_hash_link;
 	struct rdma_port_counter port_counter;
 	struct ib_port *sysfs;
@@ -4023,6 +4024,31 @@ static inline bool ib_dma_pci_p2p_dma_supported(struct ib_device *dev)
 		return false;
 
 	return dma_pci_p2pdma_supported(dev->dma_device);
+}
+
+/**
+ * ib_virt_dma_to_ptr - Convert a dma_addr to a kernel pointer
+ * @dma_addr: The DMA address
+ *
+ * Used by ib_uses_virt_dma() devices to get back to the kernel pointer after
+ * going through the dma_addr marshalling.
+ */
+static inline void *ib_virt_dma_to_ptr(u64 dma_addr)
+{
+	/* virt_dma mode maps the kvs's directly into the dma addr */
+	return (void *)(uintptr_t)dma_addr;
+}
+
+/**
+ * ib_virt_dma_to_page - Convert a dma_addr to a struct page
+ * @dma_addr: The DMA address
+ *
+ * Used by ib_uses_virt_dma() device to get back to the struct page after going
+ * through the dma_addr marshalling.
+ */
+static inline struct page *ib_virt_dma_to_page(u64 dma_addr)
+{
+	return virt_to_page(ib_virt_dma_to_ptr(dma_addr));
 }
 
 /**

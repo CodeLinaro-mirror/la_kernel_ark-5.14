@@ -110,7 +110,8 @@ typedef	struct {
 #define EFI_MEMORY_MAPPED_IO_PORT_SPACE	12
 #define EFI_PAL_CODE			13
 #define EFI_PERSISTENT_MEMORY		14
-#define EFI_MAX_MEMORY_TYPE		15
+#define EFI_UNACCEPTED_MEMORY		15
+#define EFI_MAX_MEMORY_TYPE		16
 
 /* Attribute values: */
 #define EFI_MEMORY_UC		((u64)0x0000000000000001ULL)	/* uncached */
@@ -417,6 +418,7 @@ void efi_native_runtime_setup(void);
 #define LINUX_EFI_MOK_VARIABLE_TABLE_GUID	EFI_GUID(0xc451ed2b, 0x9694, 0x45d3,  0xba, 0xba, 0xed, 0x9f, 0x89, 0x88, 0xa3, 0x89)
 #define LINUX_EFI_COCO_SECRET_AREA_GUID		EFI_GUID(0xadf956ad, 0xe98c, 0x484c,  0xae, 0x11, 0xb5, 0x1c, 0x7d, 0x33, 0x64, 0x47)
 #define LINUX_EFI_BOOT_MEMMAP_GUID		EFI_GUID(0x800f683f, 0xd08b, 0x423a,  0xa2, 0x93, 0x96, 0x5c, 0x3c, 0x6f, 0xe2, 0xb4)
+#define LINUX_EFI_UNACCEPTED_MEM_TABLE_GUID	EFI_GUID(0xd5d1de3c, 0x105c, 0x44f9,  0x9e, 0xa9, 0xbc, 0xef, 0x98, 0x12, 0x00, 0x31)
 
 /*
  * This GUID may be installed onto the kernel image's handle as a NULL protocol
@@ -432,6 +434,9 @@ void efi_native_runtime_setup(void);
 /* OEM GUIDs */
 #define DELLEMC_EFI_RCI2_TABLE_GUID		EFI_GUID(0x2d9f28a2, 0xa886, 0x456a,  0x97, 0xa8, 0xf1, 0x1e, 0xf2, 0x4f, 0xf4, 0x55)
 #define AMD_SEV_MEM_ENCRYPT_GUID		EFI_GUID(0x0cf29b71, 0x9e51, 0x433a,  0xa3, 0xb7, 0x81, 0xf3, 0xab, 0x16, 0xb8, 0x75)
+
+/* OVMF protocol GUIDs */
+#define OVMF_SEV_MEMORY_ACCEPTANCE_PROTOCOL_GUID	EFI_GUID(0xc5a010fe, 0x38a7, 0x4531,  0x8a, 0x4a, 0x05, 0x00, 0xd2, 0xfd, 0x16, 0x49)
 
 typedef struct {
 	efi_guid_t guid;
@@ -532,6 +537,14 @@ struct efi_boot_memmap {
 	efi_memory_desc_t	map[];
 };
 
+struct efi_unaccepted_memory {
+	u32 version;
+	u32 unit_size;
+	u64 phys_base;
+	u64 size;
+	unsigned long bitmap[];
+};
+
 /*
  * Architecture independent structure for describing a memory map for the
  * benefit of efi_memmap_init_early(), and for passing context between
@@ -582,15 +595,11 @@ typedef struct {
 
 #define EFI_INVALID_TABLE_ADDR		(~0UL)
 
-// BIT0 implies that Runtime code includes the forward control flow guard
-// instruction, such as X86 CET-IBT or ARM BTI.
-#define EFI_MEMORY_ATTRIBUTES_FLAGS_RT_FORWARD_CONTROL_FLOW_GUARD	0x1
-
 typedef struct {
 	u32 version;
 	u32 num_entries;
 	u32 desc_size;
-	u32 flags;
+	u32 reserved;
 	efi_memory_desc_t entry[0];
 } efi_memory_attributes_table_t;
 
@@ -634,6 +643,7 @@ extern struct efi {
 	unsigned long			tpm_final_log;		/* TPM2 Final Events Log table */
 	unsigned long			mokvar_table;		/* MOK variable config table */
 	unsigned long			coco_secret;		/* Confidential computing secret table */
+	unsigned long			unaccepted;		/* Unaccepted memory table */
 
 	efi_get_time_t			*get_time;
 	efi_set_time_t			*set_time;
@@ -755,7 +765,7 @@ extern unsigned long efi_mem_attr_table;
  *                           argument in the page tables referred to by the
  *                           first argument.
  */
-typedef int (*efi_memattr_perm_setter)(struct mm_struct *, efi_memory_desc_t *, bool);
+typedef int (*efi_memattr_perm_setter)(struct mm_struct *, efi_memory_desc_t *);
 
 extern int efi_memattr_init(void);
 extern int efi_memattr_apply_permissions(struct mm_struct *mm,
@@ -1054,6 +1064,7 @@ struct efivar_operations {
 
 struct efivars {
 	struct kset *kset;
+	struct kobject *kobject;
 	const struct efivar_operations *ops;
 };
 
@@ -1066,34 +1077,73 @@ struct efivars {
 
 #define EFI_VAR_NAME_LEN	1024
 
-int efivars_register(struct efivars *efivars,
-		     const struct efivar_operations *ops);
-int efivars_unregister(struct efivars *efivars);
+struct efi_variable {
+	efi_char16_t  VariableName[EFI_VAR_NAME_LEN/sizeof(efi_char16_t)];
+	efi_guid_t    VendorGuid;
+	unsigned long DataSize;
+	__u8          Data[1024];
+	efi_status_t  Status;
+	__u32         Attributes;
+} __attribute__((packed));
 
-#ifdef CONFIG_EFI
-bool efivar_is_available(void);
-#else
-static inline bool efivar_is_available(void) { return false; }
-#endif
+struct efivar_entry {
+	struct efi_variable var;
+	struct list_head list;
+	struct kobject kobj;
+	bool scanning;
+	bool deleting;
+};
+
+static inline void
+efivar_unregister(struct efivar_entry *var)
+{
+	kobject_put(&var->kobj);
+}
+
+int efivars_register(struct efivars *efivars,
+		     const struct efivar_operations *ops,
+		     struct kobject *kobject);
+int efivars_unregister(struct efivars *efivars);
+struct kobject *efivars_kobject(void);
 
 int efivar_supports_writes(void);
+int efivar_init(int (*func)(efi_char16_t *, efi_guid_t, unsigned long, void *),
+		void *data, bool duplicates, struct list_head *head);
 
-int efivar_lock(void);
-int efivar_trylock(void);
-void efivar_unlock(void);
+int efivar_entry_add(struct efivar_entry *entry, struct list_head *head);
+int efivar_entry_remove(struct efivar_entry *entry);
 
-efi_status_t efivar_get_variable(efi_char16_t *name, efi_guid_t *vendor,
-				 u32 *attr, unsigned long *size, void *data);
+int __efivar_entry_delete(struct efivar_entry *entry);
+int efivar_entry_delete(struct efivar_entry *entry);
 
-efi_status_t efivar_get_next_variable(unsigned long *name_size,
-				      efi_char16_t *name, efi_guid_t *vendor);
+int efivar_entry_size(struct efivar_entry *entry, unsigned long *size);
+int __efivar_entry_get(struct efivar_entry *entry, u32 *attributes,
+		       unsigned long *size, void *data);
+int efivar_entry_get(struct efivar_entry *entry, u32 *attributes,
+		     unsigned long *size, void *data);
+int efivar_entry_set(struct efivar_entry *entry, u32 attributes,
+		     unsigned long size, void *data, struct list_head *head);
+int efivar_entry_set_get_size(struct efivar_entry *entry, u32 attributes,
+			      unsigned long *size, void *data, bool *set);
+int efivar_entry_set_safe(efi_char16_t *name, efi_guid_t vendor, u32 attributes,
+			  bool block, unsigned long size, void *data);
 
-efi_status_t efivar_set_variable_locked(efi_char16_t *name, efi_guid_t *vendor,
-					u32 attr, unsigned long data_size,
-					void *data, bool nonblocking);
+int efivar_entry_iter_begin(void);
+void efivar_entry_iter_end(void);
 
-efi_status_t efivar_set_variable(efi_char16_t *name, efi_guid_t *vendor,
-				 u32 attr, unsigned long data_size, void *data);
+int __efivar_entry_iter(int (*func)(struct efivar_entry *, void *),
+			struct list_head *head, void *data,
+			struct efivar_entry **prev);
+int efivar_entry_iter(int (*func)(struct efivar_entry *, void *),
+		      struct list_head *head, void *data);
+
+struct efivar_entry *efivar_entry_find(efi_char16_t *name, efi_guid_t guid,
+				       struct list_head *head, bool remove);
+
+bool efivar_validate(efi_guid_t vendor, efi_char16_t *var_name, u8 *data,
+		     unsigned long data_size);
+bool efivar_variable_is_removable(efi_guid_t vendor, const char *name,
+				  size_t len);
 
 #if IS_ENABLED(CONFIG_EFI_CAPSULE_LOADER)
 extern bool efi_capsule_pending(int *reset_type);

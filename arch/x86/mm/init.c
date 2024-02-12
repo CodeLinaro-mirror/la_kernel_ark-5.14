@@ -272,7 +272,7 @@ static void __init probe_page_size_mask(void)
 static const struct x86_cpu_id invlpg_miss_ids[] = {
 	INTEL_MATCH(INTEL_FAM6_ALDERLAKE   ),
 	INTEL_MATCH(INTEL_FAM6_ALDERLAKE_L ),
-	INTEL_MATCH(INTEL_FAM6_ALDERLAKE_N ),
+	INTEL_MATCH(INTEL_FAM6_ATOM_GRACEMONT ),
 	INTEL_MATCH(INTEL_FAM6_RAPTORLAKE  ),
 	INTEL_MATCH(INTEL_FAM6_RAPTORLAKE_P),
 	INTEL_MATCH(INTEL_FAM6_RAPTORLAKE_S),
@@ -1068,6 +1068,11 @@ __visible DEFINE_PER_CPU_ALIGNED(struct tlb_state, cpu_tlbstate) = {
 	.next_asid = 1,
 	.cr4 = ~0UL,	/* fail hard if we screw up cr4 shadow initialization */
 };
+
+#ifdef CONFIG_ADDRESS_MASKING
+DEFINE_PER_CPU(u64, tlbstate_untag_mask);
+EXPORT_PER_CPU_SYMBOL(tlbstate_untag_mask);
+#endif
 
 void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache)
 {
