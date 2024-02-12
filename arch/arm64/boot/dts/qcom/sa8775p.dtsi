@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /*
  * Copyright (c) 2023, Linaro Limited
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <dt-bindings/interconnect/qcom,icc.h>
@@ -1845,6 +1846,13 @@
 				     <GIC_SPI 685 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 686 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 687 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
+		dcc: dma@40ff000 {
+			compatible = "qcom,sa8775p-dcc", "qcom,dcc-v3";
+			reg = <0x0 0x040ff000 0x0 0x1000>,
+			      <0x0 0x040b8800 0x0 0x6000>;
+			qcom,dcc-offset = <0x38800>;
 		};
 
 		serdes0: phy@8901000 {
