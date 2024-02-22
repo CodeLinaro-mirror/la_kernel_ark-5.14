@@ -411,13 +411,23 @@ config SC_DISPCC_8280XP
 	  splash screen.
 
 config SA_GCC_7255P
-	tristate "SA7255 Global Clock Controller"
+	tristate "SA7255P Global Clock Controller"
 	select QCOM_GDSC
 	depends on COMMON_CLK_QCOM
 	help
-	  Support for the global clock controller on SA7255 devices.
+	  Support for the global clock controller on SA7255P devices.
 	  Say Y if you want to use peripheral devices such as UART, SPI,
 	  I2C, USB, UFS, SDCC, etc.
+
+config SA_DISPCC_7255P
+	tristate "SA7255P Display Clock Controller"
+	select SA_GCC_7255P
+	help
+	  Support for the display clock controller on Qualcomm Technologies, Inc.
+	  SA7255P devices.
+	  Say Y if you want to support display devices and functionality such as
+	  splash screen.
+
 
 config SA_GCC_8775P
 	tristate "SA8775 Global Clock Controller"

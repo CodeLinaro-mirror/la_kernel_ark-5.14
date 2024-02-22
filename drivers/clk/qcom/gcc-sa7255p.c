@@ -1493,6 +1493,7 @@ static struct clk_branch gcc_camera_hf_axi_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(const struct clk_init_data){
 			.name = "gcc_camera_hf_axi_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -1508,6 +1509,7 @@ static struct clk_branch gcc_camera_sf_axi_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(const struct clk_init_data){
 			.name = "gcc_camera_sf_axi_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -1583,7 +1585,7 @@ static struct clk_branch gcc_ddrss_gpu_axi_clk = {
 
 static struct clk_branch gcc_disp_hf_axi_clk = {
 	.halt_reg = 0x33010,
-	.halt_check = BRANCH_HALT_VOTED,
+	.halt_check = BRANCH_HALT_SKIP,
 	.hwcg_reg = 0x33010,
 	.hwcg_bit = 1,
 	.clkr = {
@@ -1591,6 +1593,7 @@ static struct clk_branch gcc_disp_hf_axi_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(const struct clk_init_data){
 			.name = "gcc_disp_hf_axi_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -2290,6 +2293,7 @@ static struct clk_branch gcc_qmip_disp_ahb_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(const struct clk_init_data){
 			.name = "gcc_qmip_disp_ahb_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -2318,6 +2322,7 @@ static struct clk_branch gcc_qmip_video_cvp_ahb_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(const struct clk_init_data){
 			.name = "gcc_qmip_video_cvp_ahb_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -2333,6 +2338,7 @@ static struct clk_branch gcc_qmip_video_vcodec_ahb_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(const struct clk_init_data){
 			.name = "gcc_qmip_video_vcodec_ahb_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -2348,6 +2354,7 @@ static struct clk_branch gcc_qmip_video_vcpu_ahb_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(const struct clk_init_data){
 			.name = "gcc_qmip_video_vcpu_ahb_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -3338,7 +3345,7 @@ static struct clk_branch gcc_usb_clkref_en = {
 
 static struct clk_branch gcc_video_axi0_clk = {
 	.halt_reg = 0x34014,
-	.halt_check = BRANCH_HALT_VOTED,
+	.halt_check = BRANCH_HALT_SKIP,
 	.hwcg_reg = 0x34014,
 	.hwcg_bit = 1,
 	.clkr = {
@@ -3346,6 +3353,7 @@ static struct clk_branch gcc_video_axi0_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(const struct clk_init_data){
 			.name = "gcc_video_axi0_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -3353,7 +3361,7 @@ static struct clk_branch gcc_video_axi0_clk = {
 
 static struct clk_branch gcc_video_axi1_clk = {
 	.halt_reg = 0x3401c,
-	.halt_check = BRANCH_HALT_VOTED,
+	.halt_check = BRANCH_HALT_SKIP,
 	.hwcg_reg = 0x3401c,
 	.hwcg_bit = 1,
 	.clkr = {
@@ -3361,6 +3369,7 @@ static struct clk_branch gcc_video_axi1_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(const struct clk_init_data){
 			.name = "gcc_video_axi1_clk",
+			.flags = CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
