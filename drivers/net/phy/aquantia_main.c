@@ -25,6 +25,7 @@
 #define PHY_ID_AQR112	0x03a1b662
 #define PHY_ID_AQR412	0x03a1b712
 #define PHY_ID_AQR113C	0x31c31c12
+#define PHY_ID_AQR115C	0x31c31c33
 
 #define MDIO_PHYXS_VEND_IF_STATUS		0xe812
 #define MDIO_PHYXS_VEND_IF_STATUS_TYPE_MASK	GENMASK(7, 3)
@@ -449,13 +450,13 @@ static int aqr107_read_status(struct phy_device *phydev)
 		phydev->interface = PHY_INTERFACE_MODE_XAUI;
 		break;
 	case MDIO_PHYXS_VEND_IF_STATUS_TYPE_SGMII:
-		phydev->interface = PHY_INTERFACE_MODE_SGMII;
+		phydev->interface = PHY_INTERFACE_MODE_OCSGMII;
 		break;
 	case MDIO_PHYXS_VEND_IF_STATUS_TYPE_RXAUI:
 		phydev->interface = PHY_INTERFACE_MODE_RXAUI;
 		break;
 	case MDIO_PHYXS_VEND_IF_STATUS_TYPE_OCSGMII:
-		phydev->interface = PHY_INTERFACE_MODE_2500BASEX;
+		phydev->interface = PHY_INTERFACE_MODE_OCSGMII;
 		break;
 	default:
 		phydev->interface = PHY_INTERFACE_MODE_NA;
@@ -677,6 +678,26 @@ static int aqr107_wait_processor_intensive_op(struct phy_device *phydev)
 	return 0;
 }
 
+static int aqr115C_config_init(struct phy_device *phydev)
+{
+	/* Check that the PHY interface type is compatible */
+	if (phydev->interface != PHY_INTERFACE_MODE_SGMII &&
+	    phydev->interface != PHY_INTERFACE_MODE_2500BASEX &&
+	    phydev->interface != PHY_INTERFACE_MODE_XGMII &&
+	    phydev->interface != PHY_INTERFACE_MODE_USXGMII &&
+	    phydev->interface != PHY_INTERFACE_MODE_10GKR &&
+	    phydev->interface != PHY_INTERFACE_MODE_OCSGMII &&
+	    phydev->interface != PHY_INTERFACE_MODE_10GBASER)
+		return -ENODEV;
+
+	phy_set_max_speed(phydev, SPEED_2500);
+	phydev->autoneg = AUTONEG_ENABLE;
+
+	linkmode_copy(phydev->advertising, phydev->supported);
+
+	return 0;
+}
+
 static int aqr107_get_rate_matching(struct phy_device *phydev,
 				    phy_interface_t iface)
 {
@@ -857,6 +878,23 @@ static struct phy_driver aqr_driver[] = {
 	.get_stats      = aqr107_get_stats,
 	.link_change_notify = aqr107_link_change_notify,
 },
+{
+	PHY_ID_MATCH_MODEL(PHY_ID_AQR115C),
+		.name		= "Aquantia AQR115c",
+		.probe		= aqr107_probe,
+		.config_init	= aqr115C_config_init,
+		.config_aneg	= aqr_config_aneg,
+		.config_intr	= aqr_config_intr,
+		.handle_interrupt = aqr_handle_interrupt,
+		.read_status	= aqr107_read_status,
+		.get_tunable	= aqr107_get_tunable,
+		.set_tunable	= aqr107_set_tunable,
+		.get_sset_count = aqr107_get_sset_count,
+		.get_strings	= aqr107_get_strings,
+		.get_stats	= aqr107_get_stats,
+		.link_change_notify = aqr107_link_change_notify,
+		.get_features	= genphy_c45_pma_read_abilities,
+},
 };
 
 module_phy_driver(aqr_driver);
@@ -872,6 +910,7 @@ static struct mdio_device_id __maybe_unused aqr_tbl[] = {
 	{ PHY_ID_MATCH_MODEL(PHY_ID_AQR112) },
 	{ PHY_ID_MATCH_MODEL(PHY_ID_AQR412) },
 	{ PHY_ID_MATCH_MODEL(PHY_ID_AQR113C) },
+	{ PHY_ID_MATCH_MODEL(PHY_ID_AQR115C) },
 	{ }
 };
 
