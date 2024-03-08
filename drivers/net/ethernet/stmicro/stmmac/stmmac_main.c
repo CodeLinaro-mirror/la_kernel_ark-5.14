@@ -992,6 +992,8 @@ static void stmmac_mac_link_up(struct phylink_config *config,
 	struct stmmac_priv *priv = netdev_priv(to_net_dev(config->dev));
 	u32 old_ctrl, ctrl;
 
+	priv->plat->serdes_loopback(priv->plat, false);
+
 	if ((priv->plat->flags & STMMAC_FLAG_SERDES_UP_AFTER_PHY_LINKUP) &&
 	    priv->plat->serdes_powerup)
 		priv->plat->serdes_powerup(priv->dev, priv->plat->bsp_priv);
@@ -3803,6 +3805,8 @@ static int __stmmac_open(struct net_device *dev,
 			goto init_phy_error;
 		}
 	}
+
+	priv->plat->serdes_loopback(priv->plat, true);
 
 	/* Extra statistics */
 	memset(&priv->xstats, 0, sizeof(struct stmmac_extra_stats));
