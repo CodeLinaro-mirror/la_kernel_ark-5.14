@@ -103,7 +103,7 @@ int scm_get_wq_ctx(u32 *wq_ctx, u32 *flags, u32 *more_pending)
 	(res->a0 == QCOM_SCM_WAITQ_SLEEP || res->a0 == QCOM_SCM_WAITQ_WAKE)
 
 static int __scm_smc_do_quirk_handle_waitq(struct device *dev, struct arm_smccc_args *args,
-					   struct arm_smccc_res *res)
+					   struct arm_smccc_res *res, bool skip_mutex)
 {
 	int ret;
 	u32 wq_ctx, smc_call_ctx;
@@ -123,9 +123,15 @@ static int __scm_smc_do_quirk_handle_waitq(struct device *dev, struct arm_smccc_
 			}
 
 			if (res->a0 == QCOM_SCM_WAITQ_SLEEP) {
+				if (skip_mutex)
+					mutex_unlock(&qcom_scm_lock);
+
 				ret = qcom_scm_wait_for_wq_completion(dev_get_drvdata(dev), wq_ctx);
 				if (ret)
 					return ret;
+
+				if (skip_mutex)
+					mutex_lock(&qcom_scm_lock);
 
 				fill_wq_resume_args(&fill, smc_call_ctx);
 				smc = &fill;
@@ -141,9 +147,10 @@ static int __scm_smc_do_quirk_handle_waitq(struct device *dev, struct arm_smccc_
 }
 
 static int __scm_smc_do(struct device *dev, struct arm_smccc_args *smc,
-			struct arm_smccc_res *res, bool atomic)
+			struct arm_smccc_res *res, bool atomic, bool desc_skip_mutex)
 {
 	int ret, retry_count = 0;
+	bool skip_mutex = desc_skip_mutex && fw_supports_skip_mutex(dev);
 
 	if (atomic) {
 		__scm_smc_do_quirk(smc, res);
@@ -153,7 +160,7 @@ static int __scm_smc_do(struct device *dev, struct arm_smccc_args *smc,
 	do {
 		mutex_lock(&qcom_scm_lock);
 
-		ret = __scm_smc_do_quirk_handle_waitq(dev, smc, res);
+		ret = __scm_smc_do_quirk_handle_waitq(dev, smc, res, skip_mutex);
 
 		mutex_unlock(&qcom_scm_lock);
 
@@ -184,6 +191,7 @@ int __scm_smc_call(struct device *dev, const struct qcom_scm_desc *desc,
 	u32 smccc_call_type = atomic ? ARM_SMCCC_FAST_CALL : ARM_SMCCC_STD_CALL;
 	u32 qcom_smccc_convention = (qcom_convention == SMC_CONVENTION_ARM_32) ?
 				    ARM_SMCCC_SMC_32 : ARM_SMCCC_SMC_64;
+	bool desc_skip_mutex = desc->skip_mutex;
 	struct arm_smccc_res smc_res;
 	struct arm_smccc_args smc = {0};
 
@@ -229,7 +237,7 @@ int __scm_smc_call(struct device *dev, const struct qcom_scm_desc *desc,
 	}
 
 	/* ret error check follows after args_virt cleanup*/
-	ret = __scm_smc_do(dev, &smc, &smc_res, atomic);
+	ret = __scm_smc_do(dev, &smc, &smc_res, atomic, desc_skip_mutex);
 
 	if (args_virt) {
 		dma_unmap_single(dev, args_phys, alloc_len, DMA_TO_DEVICE);

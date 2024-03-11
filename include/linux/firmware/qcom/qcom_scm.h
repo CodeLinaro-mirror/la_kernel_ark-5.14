@@ -76,6 +76,7 @@
 #define QCOM_SCM_WAITQ_ACK			0x01
 #define QCOM_SCM_WAITQ_RESUME			0x02
 #define QCOM_SCM_WAITQ_GET_WQ_CTX		0x03
+#define QCOM_SCM_GET_WQ_QUEUE_INFO		0x04
 
 #define QCOM_SCM_MEMP_SHM_BRIDGE_ENABLE 	0x1c
 #define QCOM_SCM_MEMP_SHM_BRIDGE_DELETE 	0x1d
@@ -91,6 +92,7 @@ struct qcom_scm_desc {
 	u32 arginfo;
 	u64 args[MAX_QCOM_SCM_ARGS];
 	u32 owner;
+	bool skip_mutex;
 };
 
 /**
