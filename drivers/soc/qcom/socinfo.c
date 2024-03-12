@@ -359,6 +359,8 @@ static const struct soc_id soc_id[] = {
 	{ qcom_board_id(QRU1032) },
 	{ qcom_board_id(QRU1052) },
 	{ qcom_board_id(QRU1062) },
+	{ qcom_board_id(SA8620P) },
+	{ qcom_board_id(SA7255P) },
 };
 
 static const char *socinfo_machine(struct device *dev, unsigned int id)
