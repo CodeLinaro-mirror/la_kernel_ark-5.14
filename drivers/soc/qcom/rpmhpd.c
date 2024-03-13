@@ -202,6 +202,29 @@ static struct rpmhpd qphy = {
 	.res_name = "qphy.lvl",
 };
 
+/* SA7255P RPMH power domains */
+static struct rpmhpd *sa7255p_rpmhpds[] = {
+	[SA7255P_CX] = &cx,
+	[SA7255P_CX_AO] = &cx_ao,
+	[SA7255P_EBI] = &ebi,
+	[SA7255P_GFX] = &gfx,
+	[SA7255P_LCX] = &lcx,
+	[SA7255P_LMX] = &lmx,
+	[SA7255P_MMCX] = &mmcx,
+	[SA7255P_MMCX_AO] = &mmcx_ao,
+	[SA7255P_MXC] = &mxc,
+	[SA7255P_MXC_AO] = &mxc_ao,
+	[SA7255P_MX] = &mx,
+	[SA7255P_MX_AO] = &mx_ao,
+	[SA7255P_NSP0] = &nsp0,
+	[SA7255P_NSP1] = &nsp1,
+};
+
+static const struct rpmhpd_desc sa7255p_desc = {
+	.rpmhpds = sa7255p_rpmhpds,
+	.num_pds = ARRAY_SIZE(sa7255p_rpmhpds),
+};
+
 /* SA8540P RPMH powerdomains */
 static struct rpmhpd *sa8540p_rpmhpds[] = {
 	[SC8280XP_CX] = &cx,
@@ -519,6 +542,7 @@ static const struct rpmhpd_desc sc8280xp_desc = {
 
 static const struct of_device_id rpmhpd_match_table[] = {
 	{ .compatible = "qcom,qdu1000-rpmhpd", .data = &qdu1000_desc },
+	{ .compatible = "qcom,sa7255p-rpmhpd", .data = &sa7255p_desc },
 	{ .compatible = "qcom,sa8540p-rpmhpd", .data = &sa8540p_desc },
 	{ .compatible = "qcom,sa8775p-rpmhpd", .data = &sa8775p_desc },
 	{ .compatible = "qcom,sc7180-rpmhpd", .data = &sc7180_desc },

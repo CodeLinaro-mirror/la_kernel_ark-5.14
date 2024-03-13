@@ -4,6 +4,25 @@
 #ifndef _DT_BINDINGS_POWER_QCOM_RPMPD_H
 #define _DT_BINDINGS_POWER_QCOM_RPMPD_H
 
+/* SA7255 Power Domain Indexes */
+#define SA7255P_CX	0
+#define SA7255P_CX_AO	1
+#define SA7255P_DDR	2
+#define SA7255P_EBI	3
+#define SA7255P_GFX	4
+#define SA7255P_LCX	5
+#define SA7255P_LMX	6
+#define SA7255P_MMCX	7
+#define SA7255P_MMCX_AO	8
+#define SA7255P_MSS	9
+#define SA7255P_MX	10
+#define SA7255P_MX_AO	11
+#define SA7255P_MXC	12
+#define SA7255P_MXC_AO	13
+#define SA7255P_NSP0	14
+#define SA7255P_NSP1	15
+#define SA7255P_XO	16
+
 /* SA8775P Power Domain Indexes */
 #define SA8775P_CX	0
 #define SA8775P_CX_AO	1
