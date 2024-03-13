@@ -243,6 +243,7 @@ struct ufs_qcom_host {
 	u32 phy_gear;
 
 	bool esi_enabled;
+	bool fw_managed;
 };
 
 static inline u32

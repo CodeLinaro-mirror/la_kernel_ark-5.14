@@ -15,6 +15,7 @@
 #include <linux/gpio/consumer.h>
 #include <linux/reset-controller.h>
 #include <linux/devfreq.h>
+#include <linux/pm_domain.h>
 
 #include <soc/qcom/ice.h>
 
@@ -94,6 +95,16 @@ static struct ufs_qcom_host *ufs_qcom_hosts[MAX_UFS_QCOM_HOSTS];
 
 static void ufs_qcom_get_default_testbus_cfg(struct ufs_qcom_host *host);
 static int ufs_qcom_set_core_clk_ctrl(struct ufs_hba *hba, bool is_scale_up);
+
+static void ufs_qcom_is_fw_managed(struct ufs_qcom_host *host)
+{
+	struct device_node *node = host->hba->dev->of_node;
+
+	host->fw_managed = of_property_read_bool(node, "qcom,firmware-managed-resources");
+
+	dev_info(host->hba->dev, "(%s) Firmware managed resource \
+		abstraction enabled\n", __func__);
+}
 
 static struct ufs_qcom_host *rcdev_to_ufs_host(struct reset_controller_dev *rcd)
 {
@@ -233,7 +244,7 @@ static int ufs_qcom_host_clk_enable(struct device *dev,
 
 static void ufs_qcom_disable_lane_clks(struct ufs_qcom_host *host)
 {
-	if (!host->is_lane_clks_enabled)
+	if ((!host->is_lane_clks_enabled) || (host->fw_managed))
 		return;
 
 	clk_disable_unprepare(host->tx_l1_sync_clk);
@@ -249,7 +260,8 @@ static int ufs_qcom_enable_lane_clks(struct ufs_qcom_host *host)
 	int err;
 	struct device *dev = host->hba->dev;
 
-	if (host->is_lane_clks_enabled)
+
+	if ((host->fw_managed) || (host->is_lane_clks_enabled))
 		return 0;
 
 	err = ufs_qcom_host_clk_enable(dev, "rx_lane0_sync_clk",
@@ -291,7 +303,7 @@ static int ufs_qcom_init_lane_clks(struct ufs_qcom_host *host)
 	int err = 0;
 	struct device *dev = host->hba->dev;
 
-	if (has_acpi_companion(dev))
+	if (has_acpi_companion(dev) || host->fw_managed)
 		return 0;
 
 	err = ufs_qcom_host_clk_get(dev, "rx_lane0_sync_clk",
@@ -445,6 +457,9 @@ static int ufs_qcom_power_up_sequence(struct ufs_hba *hba)
 	struct phy *phy = host->generic_phy;
 	int ret;
 
+	if (host->fw_managed)
+		goto out;
+
 	/* Reset UFS Host Controller and PHY */
 	ret = ufs_qcom_host_reset(hba);
 	if (ret)
@@ -469,6 +484,7 @@ static int ufs_qcom_power_up_sequence(struct ufs_hba *hba)
 		goto out_disable_phy;
 	}
 
+out:
 	ufs_qcom_select_unipro_mode(host);
 
 	return 0;
@@ -693,6 +709,9 @@ static int ufs_qcom_link_startup_notify(struct ufs_hba *hba,
 	int err = 0;
 	struct ufs_qcom_host *host = ufshcd_get_variant(hba);
 
+	if (host->fw_managed)
+		return 0;
+
 	switch (status) {
 	case PRE_CHANGE:
 		if (ufs_qcom_cfg_timers(hba, UFS_PWM_G1, SLOWAUTO_MODE,
@@ -745,6 +764,11 @@ static int ufs_qcom_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op,
 	if (status == PRE_CHANGE)
 		return 0;
 
+	if (host->fw_managed) {
+		pm_runtime_put_sync(hba->dev);
+		goto out;
+	}
+
 	if (ufs_qcom_is_link_off(hba)) {
 		/*
 		 * Disable the tx/rx lane symbol clocks before PHY is
@@ -760,7 +784,7 @@ static int ufs_qcom_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op,
 	} else if (!ufs_qcom_is_link_active(hba)) {
 		ufs_qcom_disable_lane_clks(host);
 	}
-
+out:
 	return ufs_qcom_ice_suspend(host);
 }
 
@@ -769,6 +793,11 @@ static int ufs_qcom_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	struct ufs_qcom_host *host = ufshcd_get_variant(hba);
 	struct phy *phy = host->generic_phy;
 	int err;
+
+	if (host->fw_managed) {
+		pm_runtime_get_sync(hba->dev);
+		goto out;
+	}
 
 	if (ufs_qcom_is_link_off(hba)) {
 		err = phy_power_on(phy);
@@ -787,7 +816,7 @@ static int ufs_qcom_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		if (err)
 			return err;
 	}
-
+out:
 	return ufs_qcom_ice_resume(host);
 }
 
@@ -1049,16 +1078,24 @@ static void ufs_qcom_advertise_quirks(struct ufs_hba *hba)
 
 	if (host->hw_ver.major > 0x3)
 		hba->quirks |= UFSHCD_QUIRK_REINIT_AFTER_MAX_GEAR_SWITCH;
+
+	if (host->fw_managed)
+		hba->quirks |= UFSHCD_QUIRK_BROKEN_AUTO_HIBERN8;
+
 }
 
 static void ufs_qcom_set_caps(struct ufs_hba *hba)
 {
 	struct ufs_qcom_host *host = ufshcd_get_variant(hba);
 
+	hba->caps |= UFSHCD_CAP_WB_EN;
+
+	if (host->fw_managed)
+		return;
+
 	hba->caps |= UFSHCD_CAP_CLK_GATING | UFSHCD_CAP_HIBERN8_WITH_CLK_GATING;
 	hba->caps |= UFSHCD_CAP_CLK_SCALING | UFSHCD_CAP_WB_WITH_CLK_SCALING;
 	hba->caps |= UFSHCD_CAP_AUTO_BKOPS_SUSPEND;
-	hba->caps |= UFSHCD_CAP_WB_EN;
 	hba->caps |= UFSHCD_CAP_AGGR_POWER_COLLAPSE;
 	hba->caps |= UFSHCD_CAP_RPM_AUTOSUSPEND;
 
@@ -1086,7 +1123,7 @@ static int ufs_qcom_setup_clocks(struct ufs_hba *hba, bool on,
 	 * This ufs_qcom_setup_clocks() shall be called from
 	 * ufs_qcom_init() after init is done.
 	 */
-	if (!host)
+	if (!host || host->fw_managed)
 		return 0;
 
 	switch (status) {
@@ -1203,28 +1240,36 @@ static int ufs_qcom_init(struct ufs_hba *hba)
 	host->hba = hba;
 	ufshcd_set_variant(hba, host);
 
-	/* Setup the optional reset control of HCI */
-	host->core_reset = devm_reset_control_get_optional(hba->dev, "rst");
-	if (IS_ERR(host->core_reset)) {
-		err = dev_err_probe(dev, PTR_ERR(host->core_reset),
-				    "Failed to get reset control\n");
-		goto out_variant_clear;
-	}
+	ufs_qcom_is_fw_managed(host);
 
-	/* Fire up the reset controller. Failure here is non-fatal. */
-	host->rcdev.of_node = dev->of_node;
-	host->rcdev.ops = &ufs_qcom_reset_ops;
-	host->rcdev.owner = dev->driver->owner;
-	host->rcdev.nr_resets = 1;
-	err = devm_reset_controller_register(dev, &host->rcdev);
-	if (err)
-		dev_warn(dev, "Failed to register reset controller\n");
+	if (host->fw_managed)
+		pm_runtime_get_sync(hba->dev);
 
-	if (!has_acpi_companion(dev)) {
-		host->generic_phy = devm_phy_get(dev, "ufsphy");
-		if (IS_ERR(host->generic_phy)) {
-			err = dev_err_probe(dev, PTR_ERR(host->generic_phy), "Failed to get PHY\n");
+	else {
+		/* Setup the optional reset control of HCI */
+		host->core_reset = devm_reset_control_get_optional(hba->dev, "rst");
+		if (IS_ERR(host->core_reset)) {
+			err = dev_err_probe(dev, PTR_ERR(host->core_reset),
+					    "Failed to get reset control\n");
 			goto out_variant_clear;
+		}
+
+		/* Fire up the reset controller. Failure here is non-fatal. */
+		host->rcdev.of_node = dev->of_node;
+		host->rcdev.ops = &ufs_qcom_reset_ops;
+		host->rcdev.owner = dev->driver->owner;
+		host->rcdev.nr_resets = 1;
+		err = devm_reset_controller_register(dev, &host->rcdev);
+		if (err)
+			dev_warn(dev, "Failed to register reset controller\n");
+
+		if (!has_acpi_companion(dev)) {
+			host->generic_phy = devm_phy_get(dev, "ufsphy");
+			if (IS_ERR(host->generic_phy)) {
+				err = dev_err_probe(dev, PTR_ERR(host->generic_phy),
+						"Failed to get PHY\n");
+				goto out_variant_clear;
+			}
 		}
 	}
 
@@ -1273,6 +1318,9 @@ static int ufs_qcom_init(struct ufs_hba *hba)
 	if (err)
 		goto out_variant_clear;
 
+	if (host->fw_managed)
+		pm_runtime_forbid(host->hba->dev);
+
 	ufs_qcom_set_caps(hba);
 	ufs_qcom_advertise_quirks(hba);
 
@@ -1301,6 +1349,8 @@ static int ufs_qcom_init(struct ufs_hba *hba)
 	return 0;
 
 out_variant_clear:
+	if (host->fw_managed)
+		host->fw_managed = false;
 	ufshcd_set_variant(hba, NULL);
 
 	return err;
@@ -1310,9 +1360,14 @@ static void ufs_qcom_exit(struct ufs_hba *hba)
 {
 	struct ufs_qcom_host *host = ufshcd_get_variant(hba);
 
-	ufs_qcom_disable_lane_clks(host);
-	phy_power_off(host->generic_phy);
-	phy_exit(host->generic_phy);
+	if (host->fw_managed)
+		pm_runtime_put_sync(hba->dev);
+
+	else {
+		ufs_qcom_disable_lane_clks(host);
+		phy_power_off(host->generic_phy);
+		phy_exit(host->generic_phy);
+	}
 }
 
 /**
@@ -1509,7 +1564,7 @@ static int ufs_qcom_clk_scale_notify(struct ufs_hba *hba,
 	int err = 0;
 
 	/* check the host controller state before sending hibern8 cmd */
-	if (!ufshcd_is_hba_active(hba))
+	if (!ufshcd_is_hba_active(hba) || host->fw_managed)
 		return 0;
 
 	if (status == PRE_CHANGE) {
@@ -1753,7 +1808,8 @@ static void ufs_qcom_reinit_notify(struct ufs_hba *hba)
 {
 	struct ufs_qcom_host *host = ufshcd_get_variant(hba);
 
-	phy_power_off(host->generic_phy);
+	if (!host->fw_managed)
+		phy_power_off(host->generic_phy);
 }
 
 /* Resources */
