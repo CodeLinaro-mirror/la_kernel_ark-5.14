@@ -11,6 +11,9 @@
 
 #include "stmmac.h"
 #include "stmmac_platform.h"
+#include <linux/pm_opp.h>
+#include <linux/pm_domain.h>
+
 
 #define RGMII_IO_MACRO_CONFIG		0x0
 #define SDCC_HC_REG_DLL_CONFIG		0x4
@@ -82,6 +85,19 @@
 
 #define SGMII_10M_RX_CLK_DVDR			0x31
 
+/* fw-managed domains */
+enum domains_t {
+	POWER_CORE = 0,
+	POWER_MDIO = 1,
+	PERF_SERDES = 2,
+};
+
+/* fw-managed perf operations */
+enum serdes_perf_t {
+	SERDES_PERF_LEVEL_1 = 1,
+	SERDES_PERF_LEVEL_2 = 2,
+};
+
 struct ethqos_emac_por {
 	unsigned int offset;
 	unsigned int value;
@@ -94,6 +110,7 @@ struct ethqos_emac_driver_data {
 	bool has_emac_ge_3;
 	const char *link_clk_name;
 	bool has_integrated_pcs;
+	unsigned int ptp_clk_rate;
 	struct dwmac4_addrs dwmac4_addrs;
 };
 
@@ -114,6 +131,8 @@ struct qcom_ethqos {
 	unsigned int num_por;
 	bool rgmii_config_loopback_en;
 	bool has_emac_ge_3;
+	bool is_fw_managed;
+	struct dev_pm_domain_list *pd_list;
 };
 
 static int rgmii_readl(struct qcom_ethqos *ethqos, unsigned int offset)
@@ -171,6 +190,9 @@ static void rgmii_dump(void *priv)
 static void
 ethqos_update_link_clk(struct qcom_ethqos *ethqos, unsigned int speed)
 {
+	if (!phy_interface_mode_is_rgmii(ethqos->phy_mode))
+		return;
+
 	switch (speed) {
 	case SPEED_1000:
 		ethqos->link_clk_rate =  RGMII_1000_NOM_CLK_FREQ;
@@ -274,6 +296,7 @@ static const struct ethqos_emac_driver_data emac_v4_0_0_data = {
 	.has_emac_ge_3 = true,
 	.link_clk_name = "phyaux",
 	.has_integrated_pcs = true,
+	.ptp_clk_rate = 230400000,
 	.dwmac4_addrs = {
 		.dma_chan = 0x00008100,
 		.dma_chan_offset = 0x1000,
@@ -676,10 +699,80 @@ static void ethqos_fix_mac_speed(void *priv, unsigned int speed, unsigned int mo
 	ethqos_configure(ethqos);
 }
 
+static int qcom_fw_managed_power_core(void *priv, bool enabled)
+{
+	struct qcom_ethqos *ethqos = priv;
+	struct device *dev = ethqos->pd_list->pd_devs[POWER_CORE];
+	int ret;
+
+	if (enabled)
+		ret = pm_runtime_resume_and_get(dev);
+	else
+		ret = pm_runtime_put_sync(dev);
+
+	if (ret < 0)
+		dev_err(dev, "core power operation failed with err=%d\n", ret);
+
+	return ret;
+}
+
+static int qcom_fw_managed_power_mdio(void *priv, bool enabled)
+{
+	struct qcom_ethqos *ethqos = priv;
+	struct device *dev = ethqos->pd_list->pd_devs[POWER_MDIO];
+	int ret;
+
+	if (enabled)
+		ret = pm_runtime_resume_and_get(dev);
+	else
+		ret = pm_runtime_put_sync(dev);
+
+	if (ret < 0)
+		dev_err(dev, "mdio power operation failed with err=%d\n", ret);
+
+	return ret;
+}
+
+static int qcom_fw_managed_perf_serdes(void *priv, bool enabled)
+{
+	struct qcom_ethqos *ethqos = priv;
+	struct device *dev = ethqos->pd_list->pd_devs[PERF_SERDES];
+	int ret = 0;
+
+	if (enabled) {
+		pm_runtime_resume_and_get(dev);
+	} else {
+		pm_runtime_put_sync(dev);
+		return ret;
+	}
+
+	switch (ethqos->speed) {
+	case SPEED_10:
+	case SPEED_100:
+	case SPEED_1000:
+		ret = dev_pm_opp_set_level(dev, SERDES_PERF_LEVEL_1);
+		break;
+
+	case SPEED_2500:
+		ret = dev_pm_opp_set_level(dev, SERDES_PERF_LEVEL_2);
+		break;
+	}
+
+	if (ret)
+		dev_err(dev, "PERF_LEVEL failed with : %d\n", ret);
+
+	return ret;
+}
+
 static int qcom_ethqos_serdes_powerup(struct net_device *ndev, void *priv)
 {
 	struct qcom_ethqos *ethqos = priv;
 	int ret;
+
+	if (ethqos->is_fw_managed) {
+		ret = qcom_fw_managed_perf_serdes(ethqos, true);
+		return ret;
+	}
 
 	ret = phy_init(ethqos->serdes_phy);
 	if (ret)
@@ -696,6 +789,14 @@ static void qcom_ethqos_serdes_powerdown(struct net_device *ndev, void *priv)
 {
 	struct qcom_ethqos *ethqos = priv;
 
+	/* To maintain the ref count.
+	 * Else serdes deinit is done along with clock off.
+	 */
+	if (ethqos->is_fw_managed) {
+		qcom_fw_managed_perf_serdes(ethqos, false);
+		return;
+	}
+
 	phy_power_off(ethqos->serdes_phy);
 	phy_exit(ethqos->serdes_phy);
 }
@@ -704,6 +805,9 @@ static int ethqos_clks_config(void *priv, bool enabled)
 {
 	struct qcom_ethqos *ethqos = priv;
 	int ret = 0;
+
+	if (ethqos->is_fw_managed)
+		qcom_fw_managed_power_mdio(ethqos, enabled);
 
 	if (enabled) {
 		ret = clk_prepare_enable(ethqos->link_clk);
@@ -727,15 +831,19 @@ static int ethqos_clks_config(void *priv, bool enabled)
 
 static void ethqos_clks_disable(void *data)
 {
-	ethqos_clks_config(data, false);
+	struct qcom_ethqos *ethqos = data;
+
+	if (!ethqos->is_fw_managed)
+		ethqos_clks_config(data, false);
 }
 
 static void ethqos_ptp_clk_freq_config(struct stmmac_priv *priv)
 {
 	struct plat_stmmacenet_data *plat_dat = priv->plat;
+	struct qcom_ethqos *ethqos = plat_dat->bsp_priv;
 	int err;
 
-	if (!plat_dat->clk_ptp_ref)
+	if (ethqos->is_fw_managed || !plat_dat->clk_ptp_ref)
 		return;
 
 	/* Max the PTP ref clock out to get the best resolution possible */
@@ -745,6 +853,46 @@ static void ethqos_ptp_clk_freq_config(struct stmmac_priv *priv)
 	plat_dat->clk_ptp_rate = clk_get_rate(plat_dat->clk_ptp_ref);
 
 	netdev_dbg(priv->dev, "PTP rate %d\n", plat_dat->clk_ptp_rate);
+}
+
+static void qcom_ethqos_exit(struct platform_device *pdev, void *prv)
+{
+	struct net_device *ndev = platform_get_drvdata(pdev);
+	struct stmmac_priv *priv = netdev_priv(ndev);
+	struct qcom_ethqos *ethqos = prv;
+
+	if (ethqos->is_fw_managed) {
+		/* pm runtime is disabled on driver remove.
+		 */
+		if (!pm_runtime_enabled(priv->device)) {
+			pm_runtime_enable(priv->device);
+			qcom_fw_managed_power_core(ethqos, false);
+			pm_runtime_disable(priv->device);
+		}
+		dev_pm_domain_detach_list(ethqos->pd_list);
+	}
+}
+
+static int qcom_fw_managed_domain_attach(struct device *dev, struct qcom_ethqos *ethqos)
+{
+	struct dev_pm_domain_attach_data pd_data = {
+	.pd_flags = PD_FLAG_NO_DEV_LINK,
+	.pd_names = (const char*[]) { "power_core", "power_mdio", "perf_serdes" },
+	.num_pd_names = 3,
+	};
+	int ret = 0;
+
+	/* multiple domains used
+	 * pd_list will have devs as mentioned in pd_data.
+	 * ethqos->pd_list->pd_devs[i] to get the domain devs.
+	 */
+	ret = dev_pm_domain_attach_list(dev, &pd_data, &ethqos->pd_list);
+	if (ret < 0) {
+		dev_err(dev, "multi domain attach failed(ret=%d)\n", ret);
+		return ret;
+	}
+
+	return ret;
 }
 
 static int qcom_ethqos_probe(struct platform_device *pdev)
@@ -773,6 +921,14 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	if (!ethqos) {
 		ret = -ENOMEM;
 		goto out_config_dt;
+	}
+
+	if (of_property_read_bool(np, "firmware-managed-resources")) {
+		ethqos->is_fw_managed = true;
+		ret = qcom_fw_managed_domain_attach(dev, ethqos);
+		if (ret < 0)
+			return ret;
+		dev_info(dev, "fw_managed domains attached successfully = %d\n", ret);
 	}
 
 	ethqos->phy_mode = device_get_phy_mode(dev);
@@ -809,10 +965,15 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	ethqos->rgmii_config_loopback_en = data->rgmii_config_loopback_en;
 	ethqos->has_emac_ge_3 = data->has_emac_ge_3;
 
-	ethqos->link_clk = devm_clk_get(dev, data->link_clk_name ?: "rgmii");
-	if (IS_ERR(ethqos->link_clk)) {
-		ret = PTR_ERR(ethqos->link_clk);
-		goto out_config_dt;
+	if (ethqos->is_fw_managed) {
+		plat_dat->clk_ptp_rate = data->ptp_clk_rate;
+		qcom_fw_managed_power_core(ethqos, true);
+	} else {
+		ethqos->link_clk = devm_clk_get(dev, data->link_clk_name ?: "rgmii");
+		if (IS_ERR(ethqos->link_clk)) {
+			ret = PTR_ERR(ethqos->link_clk);
+			goto out_config_dt;
+		}
 	}
 
 	ret = ethqos_clks_config(ethqos, true);
@@ -835,6 +996,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	ethqos_set_func_clk_en(ethqos);
 
 	plat_dat->bsp_priv = ethqos;
+	plat_dat->exit = qcom_ethqos_exit;
 	plat_dat->fix_mac_speed = ethqos_fix_mac_speed;
 	plat_dat->dump_debug_regs = rgmii_dump;
 	plat_dat->ptp_clk_freq_config = ethqos_ptp_clk_freq_config;
@@ -849,7 +1011,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	if (data->has_integrated_pcs)
 		plat_dat->flags |= STMMAC_FLAG_HAS_INTEGRATED_PCS;
 
-	if (ethqos->serdes_phy) {
+	if (!phy_interface_mode_is_rgmii(ethqos->phy_mode)) {
 		plat_dat->serdes_powerup = qcom_ethqos_serdes_powerup;
 		plat_dat->serdes_powerdown  = qcom_ethqos_serdes_powerdown;
 	}
@@ -861,6 +1023,8 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	return ret;
 
 out_config_dt:
+	if (ethqos && ethqos->is_fw_managed)
+		dev_pm_domain_detach_list(ethqos->pd_list);
 	stmmac_remove_config_dt(pdev, plat_dat);
 
 	return ret;
