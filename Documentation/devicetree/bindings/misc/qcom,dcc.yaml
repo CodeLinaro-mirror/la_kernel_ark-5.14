@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/misc/qcom,dcc.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Data Capture and Compare
+
+maintainers:
+  - Sreenad Menon <quic_sreemeno@quicinc.com>
+
+description: |
+    DCC (Data Capture and Compare) is a DMA engine which is used to save
+    configuration data or system memory contents during catastrophic failure
+    or SW trigger. DCC is used to capture and store data for debugging purpose
+
+properties:
+  compatible:
+    oneOf:
+      - items:
+          - enum:
+              - qcom,sm8650-dcc
+              - qcom,sm8550-dcc
+              - qcom,sm8450-dcc
+          - const: qcom,dcc-v3
+      - items:
+          - enum:
+              - qcom,sm7325-dcc
+          - const: qcom,dcc-v2
+      - items:
+          - enum:
+              - qcom,sm8250-dcc
+          - const: qcom,dcc-v1
+
+  reg:
+    items:
+      - description: DCC base
+      - description: DCC SRAM base
+
+  qcom,dcc-offset:
+    $ref: /schemas/types.yaml#/definitions/uint32
+    description:
+      The offset of the DCC SRAM from DCC SRAM base.
+
+required:
+  - compatible
+  - reg
+  - qcom,dcc-offset
+
+additionalProperties: false
+
+examples:
+  - |
+    soc {
+        #address-cells = <2>;
+        #size-cells = <2>;
+
+        dma@100ff000{
+             compatible = "qcom,sm8550-dcc", "qcom,dcc-v3";
+             reg = <0x0 0x0100ff000 0x0 0x1000>,
+                   <0x0 0x10080000 0x0 0x40000>;
+             qcom,dcc-offset = <0x0>;
+        };
+    };
