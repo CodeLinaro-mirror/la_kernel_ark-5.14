@@ -73,8 +73,10 @@
 #define QCOM_SCM_SMMU_CONFIG_ERRATA1_CLIENT_ALL	0x02
 
 #define QCOM_SCM_SVC_WAITQ			0x24
+#define QCOM_SCM_WAITQ_ACK			0x01
 #define QCOM_SCM_WAITQ_RESUME			0x02
 #define QCOM_SCM_WAITQ_GET_WQ_CTX		0x03
+#define QCOM_SCM_GET_WQ_QUEUE_INFO		0x04
 
 #define QCOM_SCM_MEMP_SHM_BRIDGE_ENABLE 	0x1c
 #define QCOM_SCM_MEMP_SHM_BRIDGE_DELETE 	0x1d
@@ -90,6 +92,7 @@ struct qcom_scm_desc {
 	u32 arginfo;
 	u64 args[MAX_QCOM_SCM_ARGS];
 	u32 owner;
+	bool skip_mutex;
 };
 
 /**
@@ -219,4 +222,26 @@ extern int qcom_scm_lmh_dcvsh(u32 payload_fn, u32 payload_reg, u32 payload_val,
 			      u64 limit_node, u32 node_id, u64 version);
 extern int qcom_scm_lmh_profile_change(u32 profile_id);
 extern bool qcom_scm_lmh_dcvsh_available(void);
+
+#ifdef CONFIG_QCOM_QSEECOM
+
+int qcom_scm_qseecom_app_get_id(const char *app_name, u32 *app_id);
+int qcom_scm_qseecom_app_send(u32 app_id, void *req, size_t req_size, void *rsp,
+			      size_t rsp_size);
+
+#else /* CONFIG_QCOM_QSEECOM */
+
+static inline int qcom_scm_qseecom_app_get_id(const char *app_name, u32 *app_id)
+{
+	return -EINVAL;
+}
+
+static inline int qcom_scm_qseecom_app_send(u32 app_id, void *req,
+					    size_t req_size, void *rsp,
+					    size_t rsp_size)
+{
+	return -EINVAL;
+}
+
+#endif /* CONFIG_QCOM_QSEECOM */
 #endif
