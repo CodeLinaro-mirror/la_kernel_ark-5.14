@@ -11,6 +11,7 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_device.h>
+#include <linux/pm_domain.h>
 #include <linux/phy/phy.h>
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
@@ -117,11 +118,15 @@ struct phy_override_seq {
  *
  * @num_clks: number of clocks
  * @clks: array of clocks
- * @iface_clk: phy interface clock
  * @phy_reset: phy reset control
  * @vregs: regulator supplies bulk data
  * @phy_initialized: if PHY has been initialized correctly
  * @mode: contains the current mode the PHY is in
+ * @update_seq_cfg: tuning parameters for phy init
+ *
+ * @core_pd: virtual device for usb_core to control GDSC, resets, regulators
+ * @transfer_pd: virtual device for usb_transfer to control clocks
+ * @fw_managed: depicts if resources are fw managed
  */
 struct qcom_snps_hsphy {
 	struct device *dev;
@@ -137,7 +142,43 @@ struct qcom_snps_hsphy {
 	bool phy_initialized;
 	enum phy_mode mode;
 	struct phy_override_seq update_seq_cfg[NUM_HSPHY_TUNING_PARAMS];
+
+	struct dev_pm_domain_list *pd_list;
+	struct device *core_pd;
+	struct device *transfer_pd;
+
+	bool fw_managed;
 };
+
+static void qcom_snps_hsphy_fw_managed_domain_remove(struct qcom_snps_hsphy *hsphy)
+{
+	dev_pm_domain_detach_list(hsphy->pd_list);
+}
+
+static int qcom_snps_hsphy_fw_managed_domain_get(struct qcom_snps_hsphy *hsphy)
+{
+	struct device *dev = hsphy->dev;
+	struct dev_pm_domain_attach_data pd_data = {
+		.pd_flags	= PD_FLAG_NO_DEV_LINK,
+		.pd_names	= (const char*[]) { "usb_transfer", "usb_core" },
+		.num_pd_names	= 2,
+	};
+	int ret = 0;
+
+	if (!dev->pm_domain) {
+		ret = dev_pm_domain_attach_list(dev, &pd_data, &hsphy->pd_list);
+		if (ret < 0) {
+			dev_err(dev, "domain attach failed %d)\n", ret);
+			return ret;
+		}
+
+		hsphy->transfer_pd = hsphy->pd_list->pd_devs[0];
+		hsphy->core_pd = hsphy->pd_list->pd_devs[1];
+	} else
+		return -ENODEV;
+
+	return 0;
+}
 
 static int qcom_snps_hsphy_clk_init(struct qcom_snps_hsphy *hsphy)
 {
@@ -391,6 +432,21 @@ static int qcom_snps_hsphy_init(struct phy *phy)
 
 	dev_vdbg(&phy->dev, "%s(): Initializing SNPS HS phy\n", __func__);
 
+	if (hsphy->fw_managed) {
+		ret = pm_runtime_resume_and_get(hsphy->core_pd);
+		if (ret < 0) {
+			dev_err(&phy->dev, "Failed to enable fw managed resources");
+			return ret;
+		}
+
+		ret = pm_runtime_resume_and_get(hsphy->transfer_pd);
+		if (ret < 0) {
+			dev_err(&phy->dev, "Failed to enable fw managed resources");
+			goto poweroff_phy;
+		}
+
+	}
+
 	ret = regulator_bulk_enable(ARRAY_SIZE(hsphy->vregs), hsphy->vregs);
 	if (ret)
 		return ret;
@@ -472,6 +528,9 @@ static int qcom_snps_hsphy_init(struct phy *phy)
 disable_clks:
 	clk_bulk_disable_unprepare(hsphy->num_clks, hsphy->clks);
 poweroff_phy:
+	if (hsphy->fw_managed)
+		pm_runtime_put_sync(hsphy->core_pd);
+
 	regulator_bulk_disable(ARRAY_SIZE(hsphy->vregs), hsphy->vregs);
 
 	return ret;
@@ -480,6 +539,17 @@ poweroff_phy:
 static int qcom_snps_hsphy_exit(struct phy *phy)
 {
 	struct qcom_snps_hsphy *hsphy = phy_get_drvdata(phy);
+	int ret;
+
+	if (hsphy->fw_managed) {
+		ret = pm_runtime_put_sync(hsphy->transfer_pd);
+		if (ret < 0)
+			dev_err(hsphy->dev, "Failed to disable fw managed resource");
+
+		ret = pm_runtime_put_sync(hsphy->core_pd);
+		if (ret < 0)
+			dev_err(hsphy->dev, "Failed to disable fw managed resource");
+	}
 
 	reset_control_assert(hsphy->phy_reset);
 	clk_bulk_disable_unprepare(hsphy->num_clks, hsphy->clks);
@@ -581,14 +651,25 @@ static int qcom_snps_hsphy_probe(struct platform_device *pdev)
 	if (IS_ERR(hsphy->base))
 		return PTR_ERR(hsphy->base);
 
-	ret = qcom_snps_hsphy_clk_init(hsphy);
-	if (ret)
-		return dev_err_probe(dev, ret, "failed to initialize clocks\n");
 
-	hsphy->phy_reset = devm_reset_control_get_exclusive(&pdev->dev, NULL);
-	if (IS_ERR(hsphy->phy_reset)) {
-		dev_err(dev, "failed to get phy core reset\n");
-		return PTR_ERR(hsphy->phy_reset);
+	hsphy->fw_managed  = device_property_read_bool
+				(dev, "qcom,firmware-managed-resources");
+	if (hsphy->fw_managed) {
+		ret = qcom_snps_hsphy_fw_managed_domain_get(hsphy);
+		if (ret) {
+			dev_err(dev, "Failed to init domains. Bail out");
+			return ret;
+		}
+	} else {
+		ret = qcom_snps_hsphy_clk_init(hsphy);
+		if (ret)
+			return dev_err_probe(dev, ret, "failed to initialize clocks\n");
+
+		hsphy->phy_reset = devm_reset_control_get_exclusive(&pdev->dev, NULL);
+		if (IS_ERR(hsphy->phy_reset)) {
+			dev_err(dev, "failed to get phy core reset\n");
+			return PTR_ERR(hsphy->phy_reset);
+		}
 	}
 
 	num = ARRAY_SIZE(hsphy->vregs);
@@ -596,9 +677,10 @@ static int qcom_snps_hsphy_probe(struct platform_device *pdev)
 		hsphy->vregs[i].supply = qcom_snps_hsphy_vreg_names[i];
 
 	ret = devm_regulator_bulk_get(dev, num, hsphy->vregs);
-	if (ret)
-		return dev_err_probe(dev, ret,
-				     "failed to get regulator supplies\n");
+	if (ret) {
+		dev_err_probe(dev, ret, "failed to get regulator supplies\n");
+		goto domain_remove;
+	}
 
 	pm_runtime_set_active(dev);
 	pm_runtime_enable(dev);
@@ -612,7 +694,7 @@ static int qcom_snps_hsphy_probe(struct platform_device *pdev)
 	if (IS_ERR(generic_phy)) {
 		ret = PTR_ERR(generic_phy);
 		dev_err(dev, "failed to create phy, %d\n", ret);
-		return ret;
+		goto domain_remove;
 	}
 	hsphy->phy = generic_phy;
 
@@ -627,10 +709,34 @@ static int qcom_snps_hsphy_probe(struct platform_device *pdev)
 		pm_runtime_disable(dev);
 
 	return PTR_ERR_OR_ZERO(phy_provider);
+
+domain_remove:
+
+	if (hsphy->fw_managed)
+		qcom_snps_hsphy_fw_managed_domain_remove(hsphy);
+
+	return ret;
+}
+
+static void qcom_snps_hsphy_remove(struct platform_device *pdev)
+{
+	struct qcom_snps_hsphy *hsphy = platform_get_drvdata(pdev);
+
+	if (hsphy->fw_managed) {
+		pm_runtime_put_sync(hsphy->transfer_pd);
+		pm_runtime_put_sync(hsphy->core_pd);
+
+		qcom_snps_hsphy_fw_managed_domain_remove(hsphy);
+	}
+
+	reset_control_assert(hsphy->phy_reset);
+	clk_bulk_disable_unprepare(hsphy->num_clks, hsphy->clks);
+	regulator_bulk_disable(ARRAY_SIZE(hsphy->vregs), hsphy->vregs);
 }
 
 static struct platform_driver qcom_snps_hsphy_driver = {
 	.probe		= qcom_snps_hsphy_probe,
+	.remove_new	= qcom_snps_hsphy_remove,
 	.driver = {
 		.name	= "qcom-snps-hs-femto-v2-phy",
 		.pm = &qcom_snps_hsphy_pm_ops,
