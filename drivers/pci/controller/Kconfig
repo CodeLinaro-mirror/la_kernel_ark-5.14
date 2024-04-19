@@ -328,7 +328,7 @@ config PCIE_QCOM_ECAM
 	tristate "QCOM PCIe ECAM host controller"
 	depends on ARCH_QCOM && PCI
 	depends on OF
-	select PCI_MSI
+	depends on PCI_MSI
 	select PCI_HOST_COMMON
 	select IRQ_DOMAIN
 	help
