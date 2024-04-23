@@ -79,9 +79,12 @@ drm_modes_test
 drm_probe_helper_test
 input_test
 hashtable_test
+hid-uclogic-test
 strcat_kunit
 strscpy_kunit
 siphash_kunit
 handshake-test
 drm_exec_test
 regmap-kunit
+cfg80211-tests
+mac80211-tests

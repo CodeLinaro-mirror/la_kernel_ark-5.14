@@ -22,6 +22,8 @@
 #include <linux/bpf-cgroup-defs.h>
 #include <linux/psi_types.h>
 
+#include <linux/rh_kabi.h>
+
 #ifdef CONFIG_CGROUPS
 
 struct cgroup;
@@ -474,6 +476,20 @@ struct cgroup {
 	struct cgroup_rstat_cpu __percpu *rstat_cpu;
 	struct list_head rstat_css_list;
 
+	/*
+	 * Add padding to separate the read mostly rstat_cpu and
+	 * rstat_css_list into a different cacheline from the following
+	 * rstat_flush_next and *bstat fields which can have frequent updates.
+	 */
+	CACHELINE_PADDING(_pad_);
+
+	/*
+	 * A singly-linked list of cgroup structures to be rstat flushed.
+	 * This is a scratch field to be used exclusively by
+	 * cgroup_rstat_flush_locked() and protected by cgroup_rstat_lock.
+	 */
+	struct cgroup	*rstat_flush_next;
+
 	/* cgroup basic resource statistics */
 	struct cgroup_base_stat last_bstat;
 	struct cgroup_base_stat bstat;
@@ -496,7 +512,7 @@ struct cgroup {
 	struct psi_group *psi;
 
 	/* used to store eBPF programs */
-	struct cgroup_bpf bpf;
+	RH_KABI_EXCLUDE_WITH_SIZE(struct cgroup_bpf bpf, 256)
 
 	/* If there is block congestion on this cgroup. */
 	atomic_t congestion_count;
@@ -505,7 +521,7 @@ struct cgroup {
 	struct cgroup_freezer_state freezer;
 
 #ifdef CONFIG_BPF_SYSCALL
-	struct bpf_local_storage __rcu  *bpf_cgrp_storage;
+	RH_KABI_EXCLUDE(struct bpf_local_storage __rcu  *bpf_cgrp_storage)
 #endif
 
 	/* All ancestors including self */
