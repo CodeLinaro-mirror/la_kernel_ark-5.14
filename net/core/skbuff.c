@@ -1326,6 +1326,9 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
 	CHECK_SKB_FIELD(tc_index);
 #endif
 
+	BUILD_BUG_ON(offsetof(struct sk_buff, rh_reserved_end) -
+		     offsetof(struct sk_buff, rh_reserved_start) !=
+		     RH_KABI_SKBUFF_RESERVED);
 }
 
 /*
@@ -4390,8 +4393,9 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
 		/* GSO partial only requires that we trim off any excess that
 		 * doesn't fit into an MSS sized block, so take care of that
 		 * now.
+		 * Cap len to not accidentally hit GSO_BY_FRAGS.
 		 */
-		partial_segs = len / mss;
+		partial_segs = min_t(unsigned int, len, GSO_BY_FRAGS - 1) / mss;
 		if (partial_segs > 1)
 			mss *= partial_segs;
 		else

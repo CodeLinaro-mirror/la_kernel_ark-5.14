@@ -392,8 +392,8 @@ Documentation/ABI/testing/sysfs-bus-cxl	mstowe@redhat.com linville@redhat.com
 Documentation/driver-api/cxl/memory-devices.rst	mstowe@redhat.com linville@redhat.com
 
 ^[CONFIGFS]
-fs/configfs/	rpeterso@redhat.com
-include/linux/configfs.h	rpeterso@redhat.com
+fs/configfs/	aahringo@redhat.com
+include/linux/configfs.h	aahringo@redhat.com
 
 ^[CONNECTOR]
 drivers/connector/	dledford@redhat.com prarit@redhat.com
@@ -461,6 +461,7 @@ Documentation/networking/devlink/	poros@redhat.com ivecera@redhat.com
 net/core/devlink.c	poros@redhat.com ivecera@redhat.com
 net/devlink/	poros@redhat.com ivecera@redhat.com
 include/net/devlink.h	poros@redhat.com ivecera@redhat.com
+include/trace/events/devlink.h	poros@redhat.com ivecera@redhat.com
 include/uapi/linux/devlink.h	poros@redhat.com ivecera@redhat.com
 
 ^[DIRECT IO]
@@ -511,6 +512,7 @@ drivers/net/ethernet/	mschmidt@redhat.com
 Documentation/networking/bridge.rst	ivecera@redhat.com haliu@redhat.com
 net/bridge/	ivecera@redhat.com haliu@redhat.com
 include/linux/if_bridge.h	ivecera@redhat.com haliu@redhat.com
+include/trace/events/bridge.h	ivecera@redhat.com haliu@redhat.com
 include/uapi/linux/if_bridge.h	ivecera@redhat.com haliu@redhat.com
 include/uapi/linux/mrp_bridge.h	ivecera@redhat.com haliu@redhat.com
 
@@ -620,9 +622,9 @@ drivers/phy/	poros@redhat.com
 include/linux/phy/	poros@redhat.com
 
 ^[GFS2 FILE SYSTEM]
-Documentation/filesystems/gfs2*.txt	rpeterso@redhat.com agruenba@redhat.com
-fs/gfs2/	rpeterso@redhat.com agruenba@redhat.com
-include/uapi/linux/gfs2_ondisk.h	rpeterso@redhat.com agruenba@redhat.com
+Documentation/filesystems/gfs2*.txt	agruenba@redhat.com
+fs/gfs2/	agruenba@redhat.com
+include/uapi/linux/gfs2_ondisk.h	agruenba@redhat.com
 
 ^[GNSS SUBSYSTEM]
 drivers/gnss/	mschmidt@redhat.com
@@ -667,7 +669,7 @@ drivers/hte/	ahalaney@redhat.com bmasney@redhat.com echanude@redhat.com
 include/linux/hte.h	ahalaney@redhat.com bmasney@redhat.com echanude@redhat.com
 
 ^[HWMON SUBSYSTEM]
-drivers/hwmon/	dnelson@redhat.com
+drivers/hwmon/	darcari@redhat.com
 
 ^[HWPOISON MEMORY FAILURE HANDLING]
 mm/memory-failure.c	dnelson@redhat.com
@@ -823,6 +825,12 @@ include/linux/io-pgtable.h	jsnitsel@redhat.com
 include/linux/dma-iommu.h	jsnitsel@redhat.com
 include/linux/of_iommu.h	jsnitsel@redhat.com
 include/uapi/linux/iommu.h	jsnitsel@redhat.com
+
+^[io_uring]
+include/uapi/linux/io_uring.h	jmoyer@redhat.com
+include/linux/io_uring.h	jmoyer@redhat.com
+include/linux/io_uring_types.h	jmoyer@redhat.com
+io_uring/	jmoyer@redhat.com
 
 ^[IPMI SUBSYSTEM]
 drivers/char/ipmi/	tcamuso@redhat.com
@@ -1188,6 +1196,17 @@ include/linux/sock*	jbenc@redhat.com mleitner@redhat.com
 include/linux/tcp.h	jbenc@redhat.com mleitner@redhat.com
 include/linux/tfrc.h	jbenc@redhat.com mleitner@redhat.com
 include/linux/udp.h	jbenc@redhat.com mleitner@redhat.com
+include/trace/events/fib.h	jbenc@redhat.com mleitner@redhat.com
+include/trace/events/fib6.h	jbenc@redhat.com mleitner@redhat.com
+include/trace/events/net_probe_common.h	jbenc@redhat.com mleitner@redhat.com
+include/trace/events/mptcp.h	jbenc@redhat.com mleitner@redhat.com
+include/trace/events/napi.h	jbenc@redhat.com mleitner@redhat.com
+include/trace/events/neigh.h	jbenc@redhat.com mleitner@redhat.com
+include/trace/events/netlink.h	jbenc@redhat.com mleitner@redhat.com
+include/trace/events/skb.h	jbenc@redhat.com mleitner@redhat.com
+include/trace/events/sock.h	jbenc@redhat.com mleitner@redhat.com
+include/trace/events/tcp.h	jbenc@redhat.com mleitner@redhat.com
+include/trace/events/udp.h	jbenc@redhat.com mleitner@redhat.com
 include/uapi/asm-generic/socket.h	jbenc@redhat.com mleitner@redhat.com
 include/uapi/linux/*diag.h	jbenc@redhat.com mleitner@redhat.com
 include/uapi/linux/dcbnl.h	jbenc@redhat.com mleitner@redhat.com
@@ -1633,6 +1652,7 @@ Documentation/networking/sctp.*	mleitner@redhat.com lxin@redhat.com
 net/sctp/	mleitner@redhat.com lxin@redhat.com
 include/linux/sctp.h	mleitner@redhat.com lxin@redhat.com
 include/net/sctp/	mleitner@redhat.com lxin@redhat.com
+include/trace/events/sctp.h	mleitner@redhat.com lxin@redhat.com
 include/uapi/linux/sctp.h	mleitner@redhat.com lxin@redhat.com
 
 ^[SECURITY SUBSYSTEM]
@@ -1974,28 +1994,28 @@ include/uapi/linux/wwan.h	jtornosm@redhat.com
 Documentation/networking/device_drivers/wwan/	jtornosm@redhat.com
 
 [X86 ARCHITECTURE]
-arch/x86/	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-tools/arch/x86/	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-tools/power/cpupower/	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-tools/power/x86/	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/hyperv/hv_init.c	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/include/asm/kvm*	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/include/asm/mshyperv.h	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/include/asm/pvclock-abi.h	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/include/asm/svm.h	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/include/asm/vmx*.h	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/include/uapi/asm/kvm*	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/include/uapi/asm/svm.h	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/include/uapi/asm/vmx.h	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/kernel/cpu/cpufreq/	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/kernel/cpu/mshyperv.c	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/kernel/fpu/	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/kernel/kvm.c	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/kernel/kvmclock.c	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/kvm/	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/kvm/svm.c	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/mm/	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
-^arch/x86/net/	darcari@redhat.com prarit@redhat.com dnelson@redhat.com
+arch/x86/	darcari@redhat.com prarit@redhat.com
+tools/arch/x86/	darcari@redhat.com prarit@redhat.com
+tools/power/cpupower/	darcari@redhat.com prarit@redhat.com
+tools/power/x86/	darcari@redhat.com prarit@redhat.com
+^arch/x86/hyperv/hv_init.c	darcari@redhat.com prarit@redhat.com
+^arch/x86/include/asm/kvm*	darcari@redhat.com prarit@redhat.com
+^arch/x86/include/asm/mshyperv.h	darcari@redhat.com prarit@redhat.com
+^arch/x86/include/asm/pvclock-abi.h	darcari@redhat.com prarit@redhat.com
+^arch/x86/include/asm/svm.h	darcari@redhat.com prarit@redhat.com
+^arch/x86/include/asm/vmx*.h	darcari@redhat.com prarit@redhat.com
+^arch/x86/include/uapi/asm/kvm*	darcari@redhat.com prarit@redhat.com
+^arch/x86/include/uapi/asm/svm.h	darcari@redhat.com prarit@redhat.com
+^arch/x86/include/uapi/asm/vmx.h	darcari@redhat.com prarit@redhat.com
+^arch/x86/kernel/cpu/cpufreq/	darcari@redhat.com prarit@redhat.com
+^arch/x86/kernel/cpu/mshyperv.c	darcari@redhat.com prarit@redhat.com
+^arch/x86/kernel/fpu/	darcari@redhat.com prarit@redhat.com
+^arch/x86/kernel/kvm.c	darcari@redhat.com prarit@redhat.com
+^arch/x86/kernel/kvmclock.c	darcari@redhat.com prarit@redhat.com
+^arch/x86/kvm/	darcari@redhat.com prarit@redhat.com
+^arch/x86/kvm/svm.c	darcari@redhat.com prarit@redhat.com
+^arch/x86/mm/	darcari@redhat.com prarit@redhat.com
+^arch/x86/net/	darcari@redhat.com prarit@redhat.com
 
 [X86 CPU POWER MANAGEMENT]
 arch/x86/kernel/cpu/cpufreq/	prarit@redhat.com darcari@redhat.com
@@ -2005,8 +2025,8 @@ drivers/idle/intel_idle.c	prarit@redhat.com darcari@redhat.com
 drivers/idle/Kconfig	prarit@redhat.com darcari@redhat.com
 
 [X86 FPU SUBSYSTEM]
-arch/x86/include/asm/fpu/	dnelson@redhat.com
-arch/x86/kernel/fpu/	dnelson@redhat.com
+arch/x86/include/asm/fpu/	sbest@redhat.com
+arch/x86/kernel/fpu/	sbest@redhat.com
 
 ^[XDP (eXpress Data Path)]
 Documentation/networking/page_pool.rst	jbenc@redhat.com toke@redhat.com
@@ -2017,6 +2037,8 @@ include/net/netns/xdp.h	jbenc@redhat.com toke@redhat.com
 include/net/page_pool.h	jbenc@redhat.com toke@redhat.com
 include/net/*xdp*	jbenc@redhat.com toke@redhat.com
 include/net/*xsk*	jbenc@redhat.com toke@redhat.com
+include/trace/events/page_pool.h	jbenc@redhat.com toke@redhat.com
+include/trace/events/xdp.h	jbenc@redhat.com toke@redhat.com
 include/uapi/linux/*xdp*	jbenc@redhat.com toke@redhat.com
 net/core/page_pool.c	jbenc@redhat.com toke@redhat.com
 net/core/sock_map.c	jbenc@redhat.com toke@redhat.com

@@ -16,6 +16,7 @@
 #include <linux/interconnect.h>
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
+#include <linux/pm_domain.h>
 #include <linux/phy/phy.h>
 #include <linux/usb/of.h>
 #include <linux/reset.h>
@@ -91,7 +92,42 @@ struct dwc3_qcom {
 	bool			pm_suspended;
 	struct icc_path		*icc_path_ddr;
 	struct icc_path		*icc_path_apps;
+
+	struct dev_pm_domain_list	*pd_list;
+	struct device			*core_pd;
+	struct device			*transfer_pd;
+
+	bool			fw_managed;
 };
+
+static void dwc3_qcom_fw_managed_domain_remove(struct dwc3_qcom *qcom)
+{
+	dev_pm_domain_detach_list(qcom->pd_list);
+}
+
+static int dwc3_qcom_fw_managed_domain_get(struct dwc3_qcom *qcom)
+{
+	struct device *dev = qcom->dev;
+	struct dev_pm_domain_attach_data pd_data = {
+		.pd_flags	= PD_FLAG_NO_DEV_LINK,
+		.pd_names	= (const char*[]) { "usb_transfer", "usb_core" },
+		.num_pd_names	= 2,
+	};
+	int ret = 0;
+
+	if (!dev->pm_domain) {
+		ret = dev_pm_domain_attach_list(dev, &pd_data, &qcom->pd_list);
+		if (ret < 0) {
+			dev_err(dev, "domain attach failed %d)\n", ret);
+			return ret;
+		}
+		qcom->transfer_pd = qcom->pd_list->pd_devs[0];
+		qcom->core_pd = qcom->pd_list->pd_devs[1];
+	} else
+		return -ENODEV;
+
+	return 0;
+}
 
 static inline void dwc3_qcom_setbits(void __iomem *base, u32 offset, u32 val)
 {
@@ -430,6 +466,18 @@ static int dwc3_qcom_suspend(struct dwc3_qcom *qcom, bool wakeup)
 	if (!(val & PWR_EVNT_LPM_IN_L2_MASK))
 		dev_err(qcom->dev, "HS-PHY not in L2\n");
 
+	if (qcom->fw_managed) {
+		ret = pm_runtime_put_sync(qcom->transfer_pd);
+		if (ret < 0)
+			dev_err(qcom->dev, "Failed to disable fw managed resources");
+
+		if (!wakeup) {
+			ret = pm_runtime_put_sync(qcom->core_pd);
+			if (ret < 0)
+				dev_err(qcom->dev, "Failed to disable fw managed resources");
+		}
+	}
+
 	for (i = qcom->num_clocks - 1; i >= 0; i--)
 		clk_disable_unprepare(qcom->clks[i]);
 
@@ -461,6 +509,22 @@ static int dwc3_qcom_resume(struct dwc3_qcom *qcom, bool wakeup)
 
 	if (dwc3_qcom_is_host(qcom) && wakeup)
 		dwc3_qcom_disable_interrupts(qcom);
+
+	if (qcom->fw_managed) {
+		if (!wakeup) {
+			ret = pm_runtime_resume_and_get(qcom->core_pd);
+			if (ret < 0) {
+				dev_err(qcom->dev, "Failed to enable fw managed resources");
+				return ret;
+			}
+		}
+
+		ret = pm_runtime_resume_and_get(qcom->transfer_pd);
+		if (ret < 0) {
+			dev_err(qcom->dev, "Failed to enable fw managed resources");
+			return ret;
+		}
+	}
 
 	for (i = 0; i < qcom->num_clocks; i++) {
 		ret = clk_prepare_enable(qcom->clks[i]);
@@ -819,31 +883,51 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 		}
 	}
 
-	qcom->resets = devm_reset_control_array_get_optional_exclusive(dev);
-	if (IS_ERR(qcom->resets)) {
-		ret = PTR_ERR(qcom->resets);
-		dev_err(&pdev->dev, "failed to get resets, err=%d\n", ret);
-		return ret;
-	}
+	qcom->fw_managed  = device_property_read_bool
+				(dev, "qcom,firmware-managed-resources");
+	if (qcom->fw_managed) {
+		ret = dwc3_qcom_fw_managed_domain_get(qcom);
+		if (ret) {
+			dev_err(dev, "Failed to init domains. Bail out\n");
+			return ret;
+		}
+		ret = pm_runtime_resume_and_get(qcom->core_pd);
+		if (ret < 0) {
+			dev_err(qcom->dev, "Failed to enable %s", __func__);
+			goto domain_remove;
+		}
+		ret = pm_runtime_resume_and_get(qcom->transfer_pd);
+		if (ret < 0) {
+			dev_err(qcom->dev, "Failed to enable %s", __func__);
+			goto reset_assert;
+		}
+	} else {
+		qcom->resets = devm_reset_control_array_get_optional_exclusive(dev);
+		if (IS_ERR(qcom->resets)) {
+			ret = PTR_ERR(qcom->resets);
+			dev_err(&pdev->dev, "failed to get resets, err=%d\n", ret);
+			return ret;
+		}
 
-	ret = reset_control_assert(qcom->resets);
-	if (ret) {
-		dev_err(&pdev->dev, "failed to assert resets, err=%d\n", ret);
-		return ret;
-	}
+		ret = reset_control_assert(qcom->resets);
+		if (ret) {
+			dev_err(&pdev->dev, "failed to assert resets, err=%d\n", ret);
+			return ret;
+		}
 
-	usleep_range(10, 1000);
+		usleep_range(10, 1000);
 
-	ret = reset_control_deassert(qcom->resets);
-	if (ret) {
-		dev_err(&pdev->dev, "failed to deassert resets, err=%d\n", ret);
-		goto reset_assert;
-	}
+		ret = reset_control_deassert(qcom->resets);
+		if (ret) {
+			dev_err(&pdev->dev, "failed to deassert resets, err=%d\n", ret);
+			goto reset_assert;
+		}
 
-	ret = dwc3_qcom_clk_init(qcom, of_clk_get_parent_count(np));
-	if (ret) {
-		dev_err(dev, "failed to get clocks\n");
-		goto reset_assert;
+		ret = dwc3_qcom_clk_init(qcom, of_clk_get_parent_count(np));
+		if (ret) {
+			dev_err(dev, "failed to get clocks\n");
+			goto reset_assert;
+		}
 	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -903,9 +987,11 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 		goto depopulate;
 	}
 
-	ret = dwc3_qcom_interconnect_init(qcom);
-	if (ret)
-		goto depopulate;
+	if (!qcom->fw_managed) {
+		ret = dwc3_qcom_interconnect_init(qcom);
+		if (ret)
+			goto depopulate;
+	}
 
 	qcom->mode = usb_get_dr_mode(&qcom->dwc3->dev);
 
@@ -930,20 +1016,30 @@ static int dwc3_qcom_probe(struct platform_device *pdev)
 	return 0;
 
 interconnect_exit:
-	dwc3_qcom_interconnect_exit(qcom);
+	if (!qcom->fw_managed)
+		dwc3_qcom_interconnect_exit(qcom);
 depopulate:
 	if (np)
 		of_platform_depopulate(&pdev->dev);
 	else
 		platform_device_put(pdev);
 clk_disable:
-	for (i = qcom->num_clocks - 1; i >= 0; i--) {
-		clk_disable_unprepare(qcom->clks[i]);
-		clk_put(qcom->clks[i]);
+	if (qcom->fw_managed)
+		pm_runtime_put_sync(qcom->transfer_pd);
+	else {
+		for (i = qcom->num_clocks - 1; i >= 0; i--) {
+			clk_disable_unprepare(qcom->clks[i]);
+			clk_put(qcom->clks[i]);
+		}
 	}
 reset_assert:
-	reset_control_assert(qcom->resets);
-
+	if (qcom->fw_managed)
+		pm_runtime_put_sync(qcom->core_pd);
+	else
+		reset_control_assert(qcom->resets);
+domain_remove:
+	if (qcom->fw_managed)
+		dwc3_qcom_fw_managed_domain_remove(qcom);
 	return ret;
 }
 
@@ -955,6 +1051,13 @@ static int dwc3_qcom_remove(struct platform_device *pdev)
 
 	device_remove_software_node(&qcom->dwc3->dev);
 	of_platform_depopulate(dev);
+
+	if (qcom->fw_managed) {
+		pm_runtime_put_sync(qcom->transfer_pd);
+		pm_runtime_put_sync(qcom->core_pd);
+
+		dwc3_qcom_fw_managed_domain_remove(qcom);
+	}
 
 	for (i = qcom->num_clocks - 1; i >= 0; i--) {
 		clk_disable_unprepare(qcom->clks[i]);

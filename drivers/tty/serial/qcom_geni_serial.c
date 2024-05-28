@@ -1023,44 +1023,60 @@ static void qcom_geni_serial_set_termios(struct uart_port *uport,
 	unsigned long clk_rate;
 	u32 ver, sampling_rate;
 	unsigned int avg_bw_core;
+	int ret = 0;
 
 	qcom_geni_serial_stop_rx(uport);
 	/* baud rate */
 	baud = uart_get_baud_rate(uport, termios, old, 300, 4000000);
 	port->baud = baud;
 
-	sampling_rate = UART_OVERSAMPLING;
-	/* Sampling rate is halved for IP versions >= 2.5 */
-	ver = geni_se_get_qup_hw_version(&port->se);
-	if (ver >= QUP_SE_VERSION_2_5)
-		sampling_rate /= 2;
+	if (port->se.is_fw_managed) {
+		if (port->se.cur_perf_lvl != port->baud) {
+			ret = geni_se_set_perf_level(&port->se, port->se.perf_dev, port->baud);
+			if (ret) {
+				dev_err(port->se.dev,
+					"%s: Failed to set perf level for baud: %u  ret: %d\n",
+					__func__, port->baud, ret);
+				goto out_restart_rx;
+			}
+			port->se.cur_perf_lvl = port->baud;
+			dev_dbg(port->se.dev,
+				"%s: Successfully set perf level for baud: %u  ret: %d\n",
+				__func__, port->baud, ret);
+		}
+	} else {
+		sampling_rate = UART_OVERSAMPLING;
+		/* Sampling rate is halved for IP versions >= 2.5 */
+		ver = geni_se_get_qup_hw_version(&port->se);
+		if (ver >= QUP_SE_VERSION_2_5)
+			sampling_rate /= 2;
 
-	clk_rate = get_clk_div_rate(port->se.clk, baud,
-		sampling_rate, &clk_div);
-	if (!clk_rate) {
-		dev_err(port->se.dev,
-			"Couldn't find suitable clock rate for %u\n",
-			baud * sampling_rate);
-		goto out_restart_rx;
-	}
+		clk_rate = get_clk_div_rate(port->se.clk, baud, sampling_rate, &clk_div);
+		if (!clk_rate) {
+			dev_err(port->se.dev,
+				"Couldn't find suitable clock rate for %u\n",
+				baud * sampling_rate);
+			goto out_restart_rx;
+		}
 
-	dev_dbg(port->se.dev, "desired_rate-%u, clk_rate-%lu, clk_div-%u\n",
+		dev_dbg(port->se.dev, "desired_rate-%u, clk_rate-%lu, clk_div-%u\n",
 			baud * sampling_rate, clk_rate, clk_div);
 
-	uport->uartclk = clk_rate;
-	dev_pm_opp_set_rate(uport->dev, clk_rate);
-	ser_clk_cfg = SER_CLK_EN;
-	ser_clk_cfg |= clk_div << CLK_DIV_SHFT;
+		uport->uartclk = clk_rate;
+		dev_pm_opp_set_rate(uport->dev, clk_rate);
+		ser_clk_cfg = SER_CLK_EN;
+		ser_clk_cfg |= clk_div << CLK_DIV_SHFT;
 
-	/*
-	 * Bump up BW vote on CPU and CORE path as driver supports FIFO mode
-	 * only.
-	 */
-	avg_bw_core = (baud > 115200) ? Bps_to_icc(CORE_2X_50_MHZ)
-						: GENI_DEFAULT_BW;
-	port->se.icc_paths[GENI_TO_CORE].avg_bw = avg_bw_core;
-	port->se.icc_paths[CPU_TO_GENI].avg_bw = Bps_to_icc(baud);
-	geni_icc_set_bw(&port->se);
+		/*
+		 * Bump up BW vote on CPU and CORE path as driver supports FIFO mode
+		 * only.
+		 */
+		avg_bw_core = (baud > 115200) ? Bps_to_icc(CORE_2X_50_MHZ)
+							: GENI_DEFAULT_BW;
+		port->se.icc_paths[GENI_TO_CORE].avg_bw = avg_bw_core;
+		port->se.icc_paths[CPU_TO_GENI].avg_bw = Bps_to_icc(baud);
+		geni_icc_set_bw(&port->se);
+	}
 
 	/* parity */
 	tx_trans_cfg = readl(uport->membase + SE_UART_TX_TRANS_CFG);
@@ -1117,8 +1133,11 @@ static void qcom_geni_serial_set_termios(struct uart_port *uport,
 	writel(bits_per_char, uport->membase + SE_UART_TX_WORD_LEN);
 	writel(bits_per_char, uport->membase + SE_UART_RX_WORD_LEN);
 	writel(stop_bit_len, uport->membase + SE_UART_TX_STOP_BIT_LEN);
-	writel(ser_clk_cfg, uport->membase + GENI_SER_M_CLK_CFG);
-	writel(ser_clk_cfg, uport->membase + GENI_SER_S_CLK_CFG);
+
+	if (!port->se.is_fw_managed) {
+		writel(ser_clk_cfg, uport->membase + GENI_SER_M_CLK_CFG);
+		writel(ser_clk_cfg, uport->membase + GENI_SER_S_CLK_CFG);
+	}
 out_restart_rx:
 	qcom_geni_serial_start_rx(uport);
 }
@@ -1316,12 +1335,21 @@ static void qcom_geni_serial_pm(struct uart_port *uport,
 		old_state = UART_PM_STATE_OFF;
 
 	if (new_state == UART_PM_STATE_ON && old_state == UART_PM_STATE_OFF) {
-		geni_icc_enable(&port->se);
-		geni_se_resources_on(&port->se);
+		if (port->se.is_fw_managed) {
+			pm_runtime_get_sync(port->se.dev);
+		} else {
+			geni_icc_enable(&port->se);
+			geni_se_resources_on(&port->se);
+		}
 	} else if (new_state == UART_PM_STATE_OFF &&
 			old_state == UART_PM_STATE_ON) {
-		geni_se_resources_off(&port->se);
-		geni_icc_disable(&port->se);
+		if (port->se.is_fw_managed) {
+			port->se.cur_perf_lvl = 0;
+			pm_runtime_put_sync(port->se.dev);
+		} else {
+			geni_se_resources_off(&port->se);
+			geni_icc_disable(&port->se);
+		}
 	}
 }
 
@@ -1369,6 +1397,7 @@ static int qcom_geni_serial_probe(struct platform_device *pdev)
 	struct qcom_geni_serial_port *port;
 	struct uart_port *uport;
 	struct resource *res;
+	struct device *dev = &pdev->dev;
 	int irq;
 	bool console = false;
 	struct uart_driver *drv;
@@ -1400,11 +1429,18 @@ static int qcom_geni_serial_probe(struct platform_device *pdev)
 	uport->dev = &pdev->dev;
 	port->se.dev = &pdev->dev;
 	port->se.wrapper = dev_get_drvdata(pdev->dev.parent);
-	port->se.clk = devm_clk_get(&pdev->dev, "se");
-	if (IS_ERR(port->se.clk)) {
-		ret = PTR_ERR(port->se.clk);
-		dev_err(&pdev->dev, "Err getting SE Core clk %d\n", ret);
-		return ret;
+
+	port->se.is_fw_managed = geni_se_is_fw_managed(&port->se);
+
+	if (port->se.is_fw_managed) {
+		ret = geni_se_domain_attach(dev, &port->se);
+		if (ret <= 0)
+			return ret;
+
+		if (!console) {
+			pm_runtime_set_suspended(port->se.dev);
+			pm_runtime_enable(port->se.dev);
+		}
 	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -1422,17 +1458,6 @@ static int qcom_geni_serial_probe(struct platform_device *pdev)
 		if (!port->rx_fifo)
 			return -ENOMEM;
 	}
-
-	ret = geni_icc_get(&port->se, NULL);
-	if (ret)
-		return ret;
-	port->se.icc_paths[GENI_TO_CORE].avg_bw = GENI_DEFAULT_BW;
-	port->se.icc_paths[CPU_TO_GENI].avg_bw = GENI_DEFAULT_BW;
-
-	/* Set BW for register access */
-	ret = geni_icc_set_bw(&port->se);
-	if (ret)
-		return ret;
 
 	port->name = devm_kasprintf(uport->dev, GFP_KERNEL,
 			"qcom_geni_serial_%s%d",
@@ -1455,14 +1480,33 @@ static int qcom_geni_serial_probe(struct platform_device *pdev)
 	if (of_property_read_bool(pdev->dev.of_node, "cts-rts-swap"))
 		port->cts_rts_swap = true;
 
-	ret = devm_pm_opp_set_clkname(&pdev->dev, "se");
-	if (ret)
-		return ret;
-	/* OPP table is optional */
-	ret = devm_pm_opp_of_add_table(&pdev->dev);
-	if (ret && ret != -ENODEV) {
-		dev_err(&pdev->dev, "invalid OPP table in device tree\n");
-		return ret;
+	if (!port->se.is_fw_managed) {
+		port->se.clk = devm_clk_get(&pdev->dev, "se");
+		if (IS_ERR(port->se.clk)) {
+			ret = PTR_ERR(port->se.clk);
+			dev_err(&pdev->dev, "Err getting SE Core clk %d\n", ret);
+			return ret;
+		}
+		ret = geni_icc_get(&port->se, NULL);
+		if (ret)
+			return ret;
+		port->se.icc_paths[GENI_TO_CORE].avg_bw = GENI_DEFAULT_BW;
+		port->se.icc_paths[CPU_TO_GENI].avg_bw = GENI_DEFAULT_BW;
+
+		/* Set BW for register access */
+		ret = geni_icc_set_bw(&port->se);
+		if (ret)
+			return ret;
+
+		ret = devm_pm_opp_set_clkname(&pdev->dev, "se");
+		if (ret)
+			return ret;
+		/* OPP table is optional */
+		ret = devm_pm_opp_of_add_table(&pdev->dev);
+		if (ret && ret != -ENODEV) {
+			dev_err(&pdev->dev, "invalid OPP table in device tree\n");
+			return ret;
+		}
 	}
 
 	port->private_data.drv = drv;
@@ -1511,7 +1555,8 @@ static int qcom_geni_serial_remove(struct platform_device *pdev)
 	dev_pm_clear_wake_irq(&pdev->dev);
 	device_init_wakeup(&pdev->dev, false);
 	uart_remove_one_port(drv, &port->uport);
-
+	if (port->se.is_fw_managed)
+		dev_pm_domain_detach_list(port->se.pd_list);
 	return 0;
 }
 

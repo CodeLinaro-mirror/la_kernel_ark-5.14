@@ -147,6 +147,7 @@ struct scmi_chan_info {
  * @fetch_notification: Callback to fetch notification
  * @clear_channel: Callback to clear a channel
  * @poll_done: Callback to poll transfer status
+ * @get_max_rx_timeout_ms: Callback to override max_rx_timeout_ms
  */
 struct scmi_transport_ops {
 	int (*link_supplier)(struct device *dev);
@@ -165,6 +166,7 @@ struct scmi_transport_ops {
 				   size_t max_len, struct scmi_xfer *xfer);
 	void (*clear_channel)(struct scmi_chan_info *cinfo);
 	bool (*poll_done)(struct scmi_chan_info *cinfo, struct scmi_xfer *xfer);
+	int (*get_max_rx_timeout_ms)(struct scmi_chan_info *cinfo);
 };
 
 int scmi_protocol_device_request(const struct scmi_device_id *id_table);

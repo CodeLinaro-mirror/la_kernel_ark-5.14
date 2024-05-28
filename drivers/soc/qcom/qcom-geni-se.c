@@ -15,6 +15,8 @@
 #include <linux/pinctrl/consumer.h>
 #include <linux/platform_device.h>
 #include <linux/soc/qcom/geni-se.h>
+#include <linux/pm_opp.h>
+#include <linux/pm_domain.h>
 
 /**
  * DOC: Overview
@@ -96,6 +98,7 @@ struct geni_wrapper {
 	void __iomem *base;
 	struct clk_bulk_data clks[MAX_CLKS];
 	unsigned int num_clks;
+	bool is_fw_managed;
 };
 
 /**
@@ -911,6 +914,87 @@ int geni_icc_disable(struct geni_se *se)
 }
 EXPORT_SYMBOL(geni_icc_disable);
 
+int geni_se_domain_attach(struct device *dev, struct geni_se *se)
+{
+	struct dev_pm_domain_attach_data pd_data = {
+		.pd_flags = PD_FLAG_DEV_LINK_ON,
+		.pd_names = (const char*[]) { "power", "perf" },
+		.num_pd_names = 2,
+	};
+	int ret;
+
+	ret = dev_pm_domain_attach_list(dev, &pd_data, &se->pd_list);
+	if (ret <= 0) {
+		dev_err(dev, "multi domain attachment failed(ret=%d)\n", ret);
+		return ret;
+	}
+
+	se->perf_dev = se->pd_list->pd_devs[DOMAIN_IDX_PERF];
+	if (!se->perf_dev) {
+		dev_err(dev, "%s: getting perf domain failed\n", __func__);
+		dev_pm_domain_detach_list(se->pd_list);
+		return 0;
+	}
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(geni_se_domain_attach);
+
+bool geni_se_is_fw_managed(struct geni_se *se)
+{
+	struct geni_wrapper *wrapper = se->wrapper;
+
+	return wrapper->is_fw_managed;
+}
+EXPORT_SYMBOL_GPL(geni_se_is_fw_managed);
+
+unsigned int geni_se_get_level(struct device *dev, unsigned long clk_freq)
+{
+	struct dev_pm_opp *opp = dev_pm_opp_find_freq_floor(dev, &clk_freq);
+	unsigned int level;
+
+	if (IS_ERR(opp)) {
+		dev_err(dev, "failed to find opp for freq %lu\n", clk_freq);
+		return 0;
+	}
+
+	level = dev_pm_opp_get_level(opp);
+	dev_pm_opp_put(opp);
+
+	return level;
+}
+EXPORT_SYMBOL_GPL(geni_se_get_level);
+
+/**
+ * geni_se_set_perf_level() - Set the perf level
+ * @se: Pointer to the concerned serial engine.
+ * @level: The opp level is to set.
+ *
+ * Return: 0 on success, standard Linux error codes on failure/error
+ */
+int geni_se_set_perf_level(struct geni_se *se, struct device *dev,
+			   unsigned int level)
+{
+	int ret;
+
+	ret = dev_pm_opp_get_opp_count(dev);
+	if (ret <= 0) {
+		dev_err(se->dev, "%s: opp levels are zero or failed to get ret=%d\n",
+			__func__, ret);
+		return -EINVAL;
+	}
+
+	ret = dev_pm_opp_set_level(dev, level);
+	if (ret) {
+		dev_err(se->dev, "performance operation(%d) failed with err=%d\n",
+			level, ret);
+		return ret;
+	}
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(geni_se_set_perf_level);
+
 static int geni_se_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -933,6 +1017,11 @@ static int geni_se_probe(struct platform_device *pdev)
 		desc = device_get_match_data(&pdev->dev);
 		if (!desc)
 			return -EINVAL;
+
+		wrapper->is_fw_managed = device_property_read_bool(dev,
+								   "qcom,firmware-managed-resources");
+		if (wrapper->is_fw_managed)
+			goto out;
 
 		wrapper->num_clks = min_t(unsigned int, desc->num_clks, MAX_CLKS);
 
@@ -958,6 +1047,7 @@ static int geni_se_probe(struct platform_device *pdev)
 		}
 	}
 
+out:
 	dev_set_drvdata(dev, wrapper);
 	dev_dbg(dev, "GENI SE Driver probed\n");
 	return devm_of_platform_populate(dev);

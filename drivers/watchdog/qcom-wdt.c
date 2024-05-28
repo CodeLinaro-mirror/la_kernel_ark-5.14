@@ -12,7 +12,6 @@
 #include <linux/platform_device.h>
 #include <linux/watchdog.h>
 #include <linux/of_device.h>
-#include <linux/panic_notifier.h>
 
 enum wdt_reg {
 	WDT_RST,
@@ -50,7 +49,6 @@ struct qcom_wdt {
 	unsigned long		rate;
 	void __iomem		*base;
 	const u32		*layout;
-	struct notifier_block panic_blk;
 };
 
 static void __iomem *wdt_addr(struct qcom_wdt *wdt, enum wdt_reg reg)
@@ -148,16 +146,6 @@ static int qcom_wdt_is_running(struct watchdog_device *wdd)
 	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
 
 	return (readl(wdt_addr(wdt, WDT_EN)) & QCOM_WDT_ENABLE);
-}
-
-static int qcom_wdt_panic_handler(struct notifier_block *this,
-				unsigned long event, void *ptr)
-{
-	struct qcom_wdt *wdt = container_of(this,
-				struct qcom_wdt, panic_blk);
-
-	qcom_wdt_restart(&wdt->wdd, 0, NULL);
-	return NOTIFY_DONE;
 }
 
 static const struct watchdog_ops qcom_wdt_ops = {
@@ -317,9 +305,6 @@ static int qcom_wdt_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 
-	wdt->panic_blk.notifier_call = qcom_wdt_panic_handler;
-	atomic_notifier_chain_register(&panic_notifier_list,
-					&wdt->panic_blk);
 	platform_set_drvdata(pdev, wdt);
 	return 0;
 }

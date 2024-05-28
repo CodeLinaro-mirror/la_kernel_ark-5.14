@@ -356,40 +356,61 @@ static void spi_setup_word_len(struct spi_geni_master *mas, u16 mode,
 }
 
 static int geni_spi_set_clock_and_bw(struct spi_geni_master *mas,
-					unsigned long clk_hz)
+					struct spi_device *slv, unsigned long clk_hz)
 {
 	u32 clk_sel, m_clk_cfg, idx, div;
 	struct geni_se *se = &mas->se;
 	int ret;
+	unsigned int level;
 
-	if (clk_hz == mas->cur_speed_hz)
-		return 0;
+	if (mas->se.is_fw_managed) {
+		level = geni_se_get_level(mas->se.perf_dev, clk_hz);
+		if (!level) {
+			dev_err(mas->dev,
+				"%s: Failed to find perf level for freq: %lu  lvl: %d\n",
+				__func__, clk_hz, level);
+			return -EINVAL;
+		}
 
-	ret = get_spi_clk_cfg(clk_hz, mas, &idx, &div);
-	if (ret) {
-		dev_err(mas->dev, "Err setting clk to %lu: %d\n", clk_hz, ret);
-		return ret;
+		if (mas->se.cur_perf_lvl != level) {
+			ret = geni_se_set_perf_level(&mas->se, mas->se.perf_dev, level);
+			if (ret)
+				return ret;
+			mas->se.cur_perf_lvl = level;
+			dev_dbg(mas->dev,
+				"%s: Successfully set perf level for freq: %lu  ret: %d\n",
+				 __func__, clk_hz, ret);
+		}
+	} else {
+		if (clk_hz == mas->cur_speed_hz)
+			return 0;
+
+		ret = get_spi_clk_cfg(clk_hz, mas, &idx, &div);
+		if (ret) {
+			dev_err(mas->dev, "Err setting clk to %lu: %d\n", clk_hz, ret);
+			return ret;
+		}
+
+		/*
+		 * SPI core clock gets configured with the requested frequency
+		 * or the frequency closer to the requested frequency.
+		 * For that reason requested frequency is stored in the
+		 * cur_speed_hz and referred in the consecutive transfer instead
+		 * of calling clk_get_rate() API.
+		 */
+		mas->cur_speed_hz = clk_hz;
+
+		clk_sel = idx & CLK_SEL_MSK;
+		m_clk_cfg = (div << CLK_DIV_SHFT) | SER_CLK_EN;
+		writel(clk_sel, se->base + SE_GENI_CLK_SEL);
+		writel(m_clk_cfg, se->base + GENI_SER_M_CLK_CFG);
+
+		/* Set BW quota for CPU as driver supports FIFO mode only. */
+		se->icc_paths[CPU_TO_GENI].avg_bw = Bps_to_icc(mas->cur_speed_hz);
+		ret = geni_icc_set_bw(se);
+		if (ret)
+			return ret;
 	}
-
-	/*
-	 * SPI core clock gets configured with the requested frequency
-	 * or the frequency closer to the requested frequency.
-	 * For that reason requested frequency is stored in the
-	 * cur_speed_hz and referred in the consecutive transfer instead
-	 * of calling clk_get_rate() API.
-	 */
-	mas->cur_speed_hz = clk_hz;
-
-	clk_sel = idx & CLK_SEL_MSK;
-	m_clk_cfg = (div << CLK_DIV_SHFT) | SER_CLK_EN;
-	writel(clk_sel, se->base + SE_GENI_CLK_SEL);
-	writel(m_clk_cfg, se->base + GENI_SER_M_CLK_CFG);
-
-	/* Set BW quota for CPU as driver supports FIFO mode only. */
-	se->icc_paths[CPU_TO_GENI].avg_bw = Bps_to_icc(mas->cur_speed_hz);
-	ret = geni_icc_set_bw(se);
-	if (ret)
-		return ret;
 
 	return 0;
 }
@@ -428,7 +449,7 @@ static int setup_fifo_params(struct spi_device *spi_slv,
 		mas->last_mode = spi_slv->mode;
 	}
 
-	return geni_spi_set_clock_and_bw(mas, spi_slv->max_speed_hz);
+	return geni_spi_set_clock_and_bw(mas, spi_slv, spi_slv->max_speed_hz);
 }
 
 static void
@@ -824,7 +845,7 @@ static void geni_spi_handle_rx(struct spi_geni_master *mas)
 
 static int setup_se_xfer(struct spi_transfer *xfer,
 				struct spi_geni_master *mas,
-				u16 mode, struct spi_master *spi)
+				struct spi_device *slv, struct spi_master *spi)
 {
 	u32 m_cmd = 0;
 	u32 len;
@@ -847,12 +868,12 @@ static int setup_se_xfer(struct spi_transfer *xfer,
 	spin_unlock_irq(&mas->lock);
 
 	if (xfer->bits_per_word != mas->cur_bits_per_word) {
-		spi_setup_word_len(mas, mode, xfer->bits_per_word);
+		spi_setup_word_len(mas, slv->mode, xfer->bits_per_word);
 		mas->cur_bits_per_word = xfer->bits_per_word;
 	}
 
 	/* Speed and bits per word can be overridden per transfer */
-	ret = geni_spi_set_clock_and_bw(mas, xfer->speed_hz);
+	ret = geni_spi_set_clock_and_bw(mas, slv, xfer->speed_hz);
 	if (ret)
 		return ret;
 
@@ -928,7 +949,7 @@ static int spi_geni_transfer_one(struct spi_master *spi,
 		return 0;
 
 	if (mas->cur_xfer_mode == GENI_SE_FIFO || mas->cur_xfer_mode == GENI_SE_DMA) {
-		ret = setup_se_xfer(xfer, mas, slv->mode, spi);
+		ret = setup_se_xfer(xfer, mas, slv, spi);
 		/* SPI framework expects +ve ret code to wait for transfer complete */
 		if (!ret)
 			ret = 1;
@@ -1045,7 +1066,6 @@ static int spi_geni_probe(struct platform_device *pdev)
 	struct spi_master *spi;
 	struct spi_geni_master *mas;
 	void __iomem *base;
-	struct clk *clk;
 	struct device *dev = &pdev->dev;
 
 	irq = platform_get_irq(pdev, 0);
@@ -1060,10 +1080,6 @@ static int spi_geni_probe(struct platform_device *pdev)
 	if (IS_ERR(base))
 		return PTR_ERR(base);
 
-	clk = devm_clk_get(dev, "se");
-	if (IS_ERR(clk))
-		return PTR_ERR(clk);
-
 	spi = devm_spi_alloc_master(dev, sizeof(*mas));
 	if (!spi)
 		return -ENOMEM;
@@ -1075,16 +1091,27 @@ static int spi_geni_probe(struct platform_device *pdev)
 	mas->se.dev = dev;
 	mas->se.wrapper = dev_get_drvdata(dev->parent);
 	mas->se.base = base;
-	mas->se.clk = clk;
 
-	ret = devm_pm_opp_set_clkname(&pdev->dev, "se");
-	if (ret)
-		return ret;
-	/* OPP table is optional */
-	ret = devm_pm_opp_of_add_table(&pdev->dev);
-	if (ret && ret != -ENODEV) {
-		dev_err(&pdev->dev, "invalid OPP table in device tree\n");
-		return ret;
+	mas->se.is_fw_managed = geni_se_is_fw_managed(&mas->se);
+
+	if (mas->se.is_fw_managed) {
+		ret = geni_se_domain_attach(dev, &mas->se);
+		if (ret <= 0)
+			return ret;
+	} else {
+		mas->se.clk = devm_clk_get(dev, "se");
+		if (IS_ERR(mas->se.clk))
+			return PTR_ERR(mas->se.clk);
+
+		ret = devm_pm_opp_set_clkname(&pdev->dev, "se");
+		if (ret)
+			return ret;
+		/* OPP table is optional */
+		ret = devm_pm_opp_of_add_table(&pdev->dev);
+		if (ret && ret != -ENODEV) {
+			dev_err(&pdev->dev, "invalid OPP table in device tree, ret:%d\n", ret);
+			return ret;
+		}
 	}
 
 	spi->bus_num = -1;
@@ -1115,16 +1142,18 @@ static int spi_geni_probe(struct platform_device *pdev)
 	if (device_property_read_bool(&pdev->dev, "spi-slave"))
 		spi->slave = true;
 
-	ret = geni_icc_get(&mas->se, NULL);
-	if (ret)
-		goto spi_geni_probe_runtime_disable;
-	/* Set the bus quota to a reasonable value for register access */
-	mas->se.icc_paths[GENI_TO_CORE].avg_bw = Bps_to_icc(CORE_2X_50_MHZ);
-	mas->se.icc_paths[CPU_TO_GENI].avg_bw = GENI_DEFAULT_BW;
+	if (!mas->se.is_fw_managed) {
+		ret = geni_icc_get(&mas->se, NULL);
+		if (ret)
+			goto spi_geni_probe_runtime_disable;
+		/* Set the bus quota to a reasonable value for register access */
+		mas->se.icc_paths[GENI_TO_CORE].avg_bw = Bps_to_icc(CORE_2X_50_MHZ);
+		mas->se.icc_paths[CPU_TO_GENI].avg_bw = GENI_DEFAULT_BW;
 
-	ret = geni_icc_set_bw(&mas->se);
-	if (ret)
-		goto spi_geni_probe_runtime_disable;
+		ret = geni_icc_set_bw(&mas->se);
+		if (ret)
+			goto spi_geni_probe_runtime_disable;
+	}
 
 	ret = spi_geni_init(mas);
 	if (ret)
@@ -1159,6 +1188,8 @@ spi_geni_release_dma:
 	spi_geni_release_dma_chan(mas);
 spi_geni_probe_runtime_disable:
 	pm_runtime_disable(dev);
+	if (mas->se.is_fw_managed)
+		dev_pm_domain_detach_list(mas->se.pd_list);
 	return ret;
 }
 
@@ -1174,39 +1205,49 @@ static void spi_geni_remove(struct platform_device *pdev)
 
 	free_irq(mas->irq, spi);
 	pm_runtime_disable(&pdev->dev);
+	if (mas->se.is_fw_managed)
+		dev_pm_domain_detach_list(mas->se.pd_list);
 }
 
 static int __maybe_unused spi_geni_runtime_suspend(struct device *dev)
 {
 	struct spi_master *spi = dev_get_drvdata(dev);
 	struct spi_geni_master *mas = spi_master_get_devdata(spi);
-	int ret;
+	int ret = 0;
 
-	/* Drop the performance state vote */
-	dev_pm_opp_set_rate(dev, 0);
+	if (!mas->se.is_fw_managed) {
+		/* Drop the performance state vote */
+		dev_pm_opp_set_rate(dev, 0);
 
-	ret = geni_se_resources_off(&mas->se);
-	if (ret)
-		return ret;
+		ret = geni_se_resources_off(&mas->se);
+		if (ret)
+			return ret;
 
-	return geni_icc_disable(&mas->se);
+		ret = geni_icc_disable(&mas->se);
+	} else {
+		mas->se.cur_perf_lvl = 0;
+	}
+	return ret;
 }
 
 static int __maybe_unused spi_geni_runtime_resume(struct device *dev)
 {
 	struct spi_master *spi = dev_get_drvdata(dev);
 	struct spi_geni_master *mas = spi_master_get_devdata(spi);
-	int ret;
+	int ret = 0;
 
-	ret = geni_icc_enable(&mas->se);
-	if (ret)
-		return ret;
+	if (!mas->se.is_fw_managed) {
+		ret = geni_icc_enable(&mas->se);
+		if (ret)
+			return ret;
 
-	ret = geni_se_resources_on(&mas->se);
-	if (ret)
-		return ret;
+		ret = geni_se_resources_on(&mas->se);
+		if (ret)
+			return ret;
 
-	return dev_pm_opp_set_rate(mas->dev, mas->cur_sclk_hz);
+		ret = dev_pm_opp_set_rate(mas->dev, mas->cur_sclk_hz);
+	}
+	return ret;
 }
 
 static int __maybe_unused spi_geni_suspend(struct device *dev)

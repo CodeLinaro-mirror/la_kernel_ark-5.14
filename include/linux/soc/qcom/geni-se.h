@@ -7,6 +7,8 @@
 #define _LINUX_QCOM_GENI_SE
 
 #include <linux/interconnect.h>
+#include <linux/pm_opp.h>
+#include <linux/pm_domain.h>
 
 /**
  * enum geni_se_xfer_mode: Transfer modes supported by Serial Engines
@@ -52,6 +54,8 @@ struct geni_icc_path {
 	unsigned int avg_bw;
 };
 
+#define DOMAIN_IDX_PERF		1
+
 /**
  * struct geni_se - GENI Serial Engine
  * @base:		Base Address of the Serial Engine's register block
@@ -70,6 +74,10 @@ struct geni_se {
 	unsigned int num_clk_levels;
 	unsigned long *clk_perf_tbl;
 	struct geni_icc_path icc_paths[3];
+	struct dev_pm_domain_list *pd_list;
+	struct device *perf_dev;
+	unsigned int cur_perf_lvl;
+	bool is_fw_managed;
 };
 
 /* Common SE registers */
@@ -488,5 +496,14 @@ void geni_icc_set_tag(struct geni_se *se, u32 tag);
 int geni_icc_enable(struct geni_se *se);
 
 int geni_icc_disable(struct geni_se *se);
+
+int geni_se_domain_attach(struct device *dev, struct geni_se *se);
+
+bool geni_se_is_fw_managed(struct geni_se *se);
+
+unsigned int geni_se_get_level(struct device *dev, unsigned long clk_freq);
+
+int geni_se_set_perf_level(struct geni_se *se, struct device *dev,
+			   unsigned int level);
 #endif
 #endif
