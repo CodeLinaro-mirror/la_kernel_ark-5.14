@@ -12,7 +12,7 @@
 #include "sa8775p-scmi.dtsi"
 
 / {
-	model = "Qualcomm SA8775P Ride Firmware Managed";
+	model = "Qualcomm Technologies, Inc. SA8775P Ride Firmware Managed";
 	compatible = "qcom,sa8775p-ride-fw-managed";
 
 	aliases {
