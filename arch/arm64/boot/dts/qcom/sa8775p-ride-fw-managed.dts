@@ -37,6 +37,14 @@
 		#clock-cells = <0>;
 	};
 
+	bi_tcxo_div2: bi-tcxo-div2-clk {
+		compatible = "fixed-factor-clock";
+		clocks = <&xo_board_clk>;
+		clock-mult = <1>;
+		clock-div = <2>;
+		#clock-cells = <0>;
+	};
+
 	/delete-node/ reboot-mode;
 };
 
@@ -1046,7 +1054,7 @@
 };
 
 &cpufreq_hw {
-	clocks = <&xo_board_clk>, <&gpll0_board_clk>;
+	clocks = <&bi_tcxo_div2>, <&gpll0_board_clk>;
 };
 
 &usb_0 {
