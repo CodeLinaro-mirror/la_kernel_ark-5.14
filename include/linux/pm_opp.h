@@ -436,7 +436,7 @@ static inline int dev_pm_opp_sync_regulators(struct device *dev)
 	return -EOPNOTSUPP;
 }
 
-static inline int dev_pm_opp_set_level(struct device *dev, unsigned int level)
+int dev_pm_opp_set_level(struct device *dev, unsigned int level)
 {
 	return -EOPNOTSUPP;
 }
