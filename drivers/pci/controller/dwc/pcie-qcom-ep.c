@@ -23,6 +23,7 @@
 #include <linux/reset.h>
 #include <linux/module.h>
 #include <linux/of_device.h>
+#include <linux/iopoll.h>
 
 #include "pcie-designware.h"
 
@@ -170,6 +171,13 @@
 
 #define to_pcie_ep(x)				dev_get_drvdata((x)->dev)
 
+#define PCS_COM_SW_RESET			0x00
+#define PCS_COM_PCS_STATUS1			0x14
+#define PCS_COM_POWER_DOWN_CONTROL	0x40
+#define PCS_COM_START_CONTROL		0x44
+
+#define PHY_INIT_COMPLETE_TIMEOUT	10000
+#define PHY_STATUS					BIT(7)
 enum qcom_pcie_ep_link_status {
 	QCOM_PCIE_EP_LINK_DISABLED,
 	QCOM_PCIE_EP_LINK_ENABLED,
@@ -180,6 +188,7 @@ enum qcom_pcie_ep_link_status {
 struct qcom_pcie_ep_cfg {
 	bool no_snoop_overide;
 	bool disable_mhi_ram_parity_check;
+	bool scmi_support;
 };
 
 /**
@@ -391,6 +400,8 @@ err_disable_clk:
 
 static void qcom_pcie_disable_resources(struct qcom_pcie_ep *pcie_ep)
 {
+	if (pcie_ep->cfg && pcie_ep->cfg->scmi_support)
+		return;
 	icc_set_bw(pcie_ep->icc_mem, 0, 0);
 	phy_power_off(pcie_ep->phy);
 	phy_exit(pcie_ep->phy);
@@ -432,13 +443,38 @@ static int qcom_pcie_perst_deassert(struct dw_pcie *pci)
 {
 	struct qcom_pcie_ep *pcie_ep = to_pcie_ep(pci);
 	struct device *dev = pci->dev;
+	struct platform_device *pdev = to_platform_device(dev);
+	void __iomem *status;
+	void __iomem *phy_pcs;
+	struct resource *res;
 	u32 val, offset;
 	int ret;
 
-	ret = qcom_pcie_enable_resources(pcie_ep);
-	if (ret) {
-		dev_err(dev, "Failed to enable resources: %d\n", ret);
-		return ret;
+	if (pcie_ep->cfg && pcie_ep->cfg->scmi_support) {
+		res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "phy_pcs");
+		phy_pcs = ioremap(res->start, resource_size(res));
+
+		writel_relaxed(0x3, phy_pcs + PCS_COM_POWER_DOWN_CONTROL);
+		/* Pull PHY out of reset state */
+		writel_relaxed(0x0, phy_pcs + PCS_COM_SW_RESET);
+		/* start SerDes and Phy-Coding-Sublayer */
+		writel_relaxed(0x3, phy_pcs + PCS_COM_START_CONTROL);
+		usleep_range(1000, 1200);
+		status = phy_pcs + PCS_COM_PCS_STATUS1;
+
+		ret = readl_poll_timeout(status, val, !(val & PHY_STATUS), 200,
+					 PHY_INIT_COMPLETE_TIMEOUT);
+		if (ret) {
+			pr_err("phy initialization timed-out\n");
+			goto phy_power_off;
+		}
+	}
+	else {
+		ret = qcom_pcie_enable_resources(pcie_ep);
+		if (ret) {
+			dev_err(dev, "Failed to enable resources: %d\n", ret);
+			return ret;
+		}
 	}
 
 	/* Assert WAKE# to RC to indicate device is ready */
@@ -575,6 +611,10 @@ static int qcom_pcie_perst_deassert(struct dw_pcie *pci)
 
 	return 0;
 
+phy_power_off:
+	writel_relaxed(0x0, phy_pcs + PCS_COM_START_CONTROL);
+	writel_relaxed(0x0, phy_pcs + PCS_COM_POWER_DOWN_CONTROL);
+
 err_disable_resources:
 	qcom_pcie_disable_resources(pcie_ep);
 
@@ -599,6 +639,7 @@ static void qcom_pcie_perst_assert(struct dw_pcie *pci)
 static const struct qcom_pcie_ep_cfg cfg_1_34_0 = {
 	.no_snoop_overide = true,
 	.disable_mhi_ram_parity_check = true,
+	.scmi_support = true,
 };
 
 /* Common DWC controller ops */
@@ -683,16 +724,6 @@ static int qcom_pcie_ep_get_resources(struct platform_device *pdev,
 		return ret;
 	}
 
-	pcie_ep->num_clks = devm_clk_bulk_get_all(dev, &pcie_ep->clks);
-	if (pcie_ep->num_clks < 0) {
-		dev_err(dev, "Failed to get clocks\n");
-		return pcie_ep->num_clks;
-	}
-
-	pcie_ep->core_reset = devm_reset_control_get_exclusive(dev, "core");
-	if (IS_ERR(pcie_ep->core_reset))
-		return PTR_ERR(pcie_ep->core_reset);
-
 	pcie_ep->reset = devm_gpiod_get(dev, "reset", GPIOD_IN);
 	if (IS_ERR(pcie_ep->reset))
 		return PTR_ERR(pcie_ep->reset);
@@ -701,13 +732,25 @@ static int qcom_pcie_ep_get_resources(struct platform_device *pdev,
 	if (IS_ERR(pcie_ep->wake))
 		return PTR_ERR(pcie_ep->wake);
 
-	pcie_ep->phy = devm_phy_optional_get(dev, "pciephy");
-	if (IS_ERR(pcie_ep->phy))
-		ret = PTR_ERR(pcie_ep->phy);
+	if (!(pcie_ep->cfg && pcie_ep->cfg->scmi_support)) {
+		pcie_ep->num_clks = devm_clk_bulk_get_all(dev, &pcie_ep->clks);
+		if (pcie_ep->num_clks < 0) {
+			dev_err(dev, "Failed to get clocks\n");
+			return pcie_ep->num_clks;
+		}
 
-	pcie_ep->icc_mem = devm_of_icc_get(dev, "pcie-mem");
-	if (IS_ERR(pcie_ep->icc_mem))
-		ret = PTR_ERR(pcie_ep->icc_mem);
+		pcie_ep->core_reset = devm_reset_control_get_exclusive(dev, "core");
+		if (IS_ERR(pcie_ep->core_reset))
+			return PTR_ERR(pcie_ep->core_reset);
+
+		pcie_ep->phy = devm_phy_optional_get(dev, "pciephy");
+		if (IS_ERR(pcie_ep->phy))
+			ret = PTR_ERR(pcie_ep->phy);
+
+		pcie_ep->icc_mem = devm_of_icc_get(dev, "pcie-mem");
+		if (IS_ERR(pcie_ep->icc_mem))
+			ret = PTR_ERR(pcie_ep->icc_mem);
+	}
 
 	return ret;
 }
