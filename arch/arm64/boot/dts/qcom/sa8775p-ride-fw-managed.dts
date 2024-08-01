@@ -25,6 +25,7 @@
 		serial2 = &uart17;
 		spi16 = &spi16;
 		ufshc1 = &ufs_mem_hc;
+		scmichannels = &scmichannels;
 	};
 
 	chosen {

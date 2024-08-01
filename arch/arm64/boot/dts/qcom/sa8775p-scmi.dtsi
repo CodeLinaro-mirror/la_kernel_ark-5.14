@@ -4,7 +4,7 @@
  */
 
 &soc {
-	sram@d0000000 {
+	scmichannels: sram@d0000000 {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		compatible = "mmio-sram";
