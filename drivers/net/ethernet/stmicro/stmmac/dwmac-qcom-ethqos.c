@@ -733,6 +733,20 @@ static int qcom_fw_managed_power_mdio(void *priv, bool enabled)
 	return ret;
 }
 
+static int ethqos_pm_opp_set_level(struct device *dev, unsigned int level)
+{
+	struct dev_pm_opp *opp = dev_pm_opp_find_level_exact(dev, level);
+	int ret = 0;
+
+	if (IS_ERR(opp))
+		return -EINVAL;
+
+	ret = dev_pm_opp_set_opp(dev, opp);
+	dev_pm_opp_put(opp);
+
+	return ret;
+}
+
 static int qcom_fw_managed_perf_serdes(void *priv, bool enabled)
 {
 	struct qcom_ethqos *ethqos = priv;
@@ -750,11 +764,11 @@ static int qcom_fw_managed_perf_serdes(void *priv, bool enabled)
 	case SPEED_10:
 	case SPEED_100:
 	case SPEED_1000:
-		ret = dev_pm_opp_set_level(dev, SERDES_PERF_LEVEL_1);
+		ret = ethqos_pm_opp_set_level(dev, SERDES_PERF_LEVEL_1);
 		break;
 
 	case SPEED_2500:
-		ret = dev_pm_opp_set_level(dev, SERDES_PERF_LEVEL_2);
+		ret = ethqos_pm_opp_set_level(dev, SERDES_PERF_LEVEL_2);
 		break;
 	}
 

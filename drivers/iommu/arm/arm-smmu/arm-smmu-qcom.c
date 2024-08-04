@@ -99,8 +99,6 @@ static void qcom_adreno_smmu_resume_translation(const void *cookie, bool termina
 
 #define QCOM_ADRENO_SMMU_GPU_SID 0
 
-#define QCOM_ADRENO_SMMU_GPU_LPAC_SID 1
-
 static bool qcom_adreno_smmu_is_gpu_device(struct device *dev)
 {
 	struct iommu_fwspec *fwspec = dev_iommu_fwspec_get(dev);
@@ -113,8 +111,7 @@ static bool qcom_adreno_smmu_is_gpu_device(struct device *dev)
 	for (i = 0; i < fwspec->num_ids; i++) {
 		u16 sid = FIELD_GET(ARM_SMMU_SMR_ID, fwspec->ids[i]);
 
-		if (sid == QCOM_ADRENO_SMMU_GPU_SID ||
-				sid == QCOM_ADRENO_SMMU_GPU_LPAC_SID)
+		if (sid == QCOM_ADRENO_SMMU_GPU_SID)
 			return true;
 	}
 
@@ -189,9 +186,9 @@ static int qcom_adreno_smmu_alloc_context_bank(struct arm_smmu_domain *smmu_doma
 	 */
 	if (qcom_adreno_smmu_is_gpu_device(dev)) {
 		start = 0;
-		count = 2;
+		count = 1;
 	} else {
-		start = 2;
+		start = 1;
 		count = smmu->num_context_banks;
 	}
 

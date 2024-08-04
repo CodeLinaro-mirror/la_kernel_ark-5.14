@@ -547,14 +547,6 @@
 	pinctrl-0 = <&qup_spi16_default>;
 	pinctrl-names = "default";
 	status = "okay";
-
-	spidevmaster@0 {
-		compatible = "qcom,spidev";
-		reg = <0>;
-		spi-max-frequency = <10000000>;
-		spi-cpha;
-		status = "okay";
-	};
 };
 
 &tlmm {

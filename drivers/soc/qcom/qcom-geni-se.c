@@ -976,6 +976,7 @@ int geni_se_set_perf_level(struct geni_se *se, struct device *dev,
 			   unsigned int level)
 {
 	int ret;
+	struct dev_pm_opp *opp;
 
 	ret = dev_pm_opp_get_opp_count(dev);
 	if (ret <= 0) {
@@ -984,12 +985,16 @@ int geni_se_set_perf_level(struct geni_se *se, struct device *dev,
 		return -EINVAL;
 	}
 
-	ret = dev_pm_opp_set_level(dev, level);
-	if (ret) {
+	opp = dev_pm_opp_find_level_exact(dev, level);
+	if (IS_ERR(opp))
+		return -EINVAL;
+
+	ret = dev_pm_opp_set_opp(dev, opp);
+	dev_pm_opp_put(opp);
+
+	if (ret)
 		dev_err(se->dev, "performance operation(%d) failed with err=%d\n",
 			level, ret);
-		return ret;
-	}
 
 	return ret;
 }

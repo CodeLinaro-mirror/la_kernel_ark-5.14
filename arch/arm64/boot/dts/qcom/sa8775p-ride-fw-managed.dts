@@ -1,0 +1,1200 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+
+#include "sa8775p.dtsi"
+#include "sa8775p-pmics.dtsi"
+#include "sa8775p-scmi.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. SA8775P Ride Firmware Managed";
+	compatible = "qcom,sa8775p-ride-fw-managed";
+
+	aliases {
+		ethernet0 = &ethernet0;
+		ethernet1 = &ethernet1;
+		i2c11 = &i2c11;
+		i2c18 = &i2c18;
+		serial0 = &uart10;
+		serial1 = &uart4;
+		serial2 = &uart17;
+		spi16 = &spi16;
+		ufshc1 = &ufs_mem_hc;
+		scmichannels = &scmichannels;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	gpll0_board_clk: gpll0-board-clk {
+		compatible = "fixed-clock";
+		clock-frequency = <300000000>;
+		#clock-cells = <0>;
+	};
+
+	bi_tcxo_div2: bi-tcxo-div2-clk {
+		compatible = "fixed-factor-clock";
+		clocks = <&xo_board_clk>;
+		clock-mult = <1>;
+		clock-div = <2>;
+		#clock-cells = <0>;
+	};
+
+	/delete-node/ reboot-mode;
+};
+
+/* deleting nodes not needed for fw-managed variant */
+
+/delete-node/ &apps_rsc;
+/delete-node/ &gcc;
+/delete-node/ &gpucc;
+/delete-node/ &aggre1_noc;
+/delete-node/ &aggre2_noc;
+/delete-node/ &clk_virt;
+/delete-node/ &config_noc;
+/delete-node/ &dc_noc;
+/delete-node/ &gem_noc;
+/delete-node/ &gpdsp_anoc;
+/delete-node/ &lpass_ag_noc;
+/delete-node/ &mc_virt;
+/delete-node/ &mmss_noc;
+/delete-node/ &nspa_noc;
+/delete-node/ &nspb_noc;
+/delete-node/ &pcie_anoc;
+/delete-node/ &system_noc;
+/delete-node/ &spmi_bus;
+/delete-node/ &qup_opp_table_100mhz;
+/delete-node/ &ufs_mem_phy;
+/delete-node/ &serdes0;
+/delete-node/ &serdes1;
+
+/* deleting nodes not yet migrated to fw-managed variant */
+
+/delete-node/ &pcie0_ep;
+/delete-node/ &pcie1_ep;
+/delete-node/ &pcie0_phy;
+/delete-node/ &pcie1_phy;
+
+&pmm8654au_0_thermal {
+	thermal-sensors = <&scmi23_sensor 0>;
+};
+
+&pmm8654au_1_thermal {
+	thermal-sensors = <&scmi23_sensor 1>;
+};
+
+&pmm8654au_2_thermal {
+	thermal-sensors = <&scmi23_sensor 2>;
+};
+
+&pmm8654au_3_thermal {
+	thermal-sensors = <&scmi23_sensor 3>;
+};
+
+&scmi0 {
+        status = "okay";
+};
+
+&scmi1 {
+        status = "okay";
+};
+
+&scmi2 {
+        status = "okay";
+};
+
+&scmi3 {
+        status = "okay";
+};
+
+&scmi5 {
+	status = "okay";
+};
+
+&scmi6 {
+	status = "okay";
+};
+
+&scmi7 {
+       status = "okay";
+};
+
+&scmi8 {
+        status = "okay";
+};
+
+&scmi9 {
+        status = "okay";
+};
+
+&scmi10 {
+        status = "okay";
+};
+
+&scmi11 {
+        status = "okay";
+};
+
+&scmi12 {
+        status = "okay";
+};
+
+&scmi13 {
+        status = "okay";
+};
+
+&scmi14 {
+        status = "okay";
+};
+
+&scmi15 {
+        status = "okay";
+};
+
+&scmi23 {
+        status = "okay";
+};
+
+&ethernet0 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ phys;
+	/delete-property/ phy-names;
+
+	power-domains = <&scmi7_pd 0>, <&scmi7_pd 1>,<&scmi7_dvfs 0>;
+	power-domain-names = "power_core", "power_mdio","perf_serdes";
+	firmware-managed-resources;
+
+	phy-mode = "sgmii";
+	phy-handle = <&sgmii_phy0>;
+
+	pinctrl-0 = <&ethernet0_default>;
+	pinctrl-names = "default";
+
+	snps,mtl-rx-config = <&mtl_rx_setup>;
+	snps,mtl-tx-config = <&mtl_tx_setup>;
+	snps,ps-speed = <1000>;
+
+	status = "okay";
+
+	mdio {
+		compatible = "snps,dwmac-mdio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		sgmii_phy0: phy@8 {
+			compatible = "ethernet-phy-id0141.0dd4";
+			reg = <0x8>;
+			device_type = "ethernet-phy";
+			resets = <&scmi7_rst 0>;
+			reset-names = "phy";
+			reset-assert-us = <11000>;
+			reset-deassert-us = <70000>;
+		};
+
+		sgmii_phy1: phy@a {
+			compatible = "ethernet-phy-id0141.0dd4";
+			reg = <0xa>;
+			device_type = "ethernet-phy";
+			resets = <&scmi8_rst 0>;
+			reset-names = "phy";
+			reset-assert-us = <11000>;
+			reset-deassert-us = <70000>;
+		};
+	};
+
+	mtl_rx_setup: rx-queues-config {
+		snps,rx-queues-to-use = <4>;
+		snps,rx-sched-sp;
+
+		queue0 {
+			snps,dcb-algorithm;
+			snps,map-to-dma-channel = <0x0>;
+			snps,route-up;
+			snps,priority = <0x1>;
+		};
+
+		queue1 {
+			snps,dcb-algorithm;
+			snps,map-to-dma-channel = <0x1>;
+			snps,route-ptp;
+		};
+
+		queue2 {
+			snps,avb-algorithm;
+			snps,map-to-dma-channel = <0x2>;
+			snps,route-avcp;
+		};
+
+		queue3 {
+			snps,avb-algorithm;
+			snps,map-to-dma-channel = <0x3>;
+			snps,priority = <0xc>;
+		};
+	};
+
+	mtl_tx_setup: tx-queues-config {
+		snps,tx-queues-to-use = <4>;
+		snps,tx-sched-sp;
+
+		queue0 {
+			snps,dcb-algorithm;
+		};
+
+		queue1 {
+			snps,dcb-algorithm;
+		};
+
+		queue2 {
+			snps,avb-algorithm;
+			snps,send_slope = <0x1000>;
+			snps,idle_slope = <0x1000>;
+			snps,high_credit = <0x3e800>;
+			snps,low_credit = <0xffc18000>;
+		};
+
+		queue3 {
+			snps,avb-algorithm;
+			snps,send_slope = <0x1000>;
+			snps,idle_slope = <0x1000>;
+			snps,high_credit = <0x3e800>;
+			snps,low_credit = <0xffc18000>;
+		};
+	};
+};
+
+&ethernet1 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ phys;
+	/delete-property/ phy-names;
+
+	power-domains = <&scmi8_pd 0>, <&scmi8_pd 1>,<&scmi8_dvfs 0>;
+	power-domain-names = "power_core", "power_mdio","perf_serdes";
+	firmware-managed-resources;
+
+	phy-mode = "sgmii";
+	phy-handle = <&sgmii_phy1>;
+
+	snps,mtl-rx-config = <&mtl_rx_setup1>;
+	snps,mtl-tx-config = <&mtl_tx_setup1>;
+	snps,ps-speed = <1000>;
+
+	status = "okay";
+
+	mtl_rx_setup1: rx-queues-config {
+		snps,rx-queues-to-use = <4>;
+		snps,rx-sched-sp;
+
+		queue0 {
+			snps,dcb-algorithm;
+			snps,map-to-dma-channel = <0x0>;
+			snps,route-up;
+			snps,priority = <0x1>;
+		};
+
+		queue1 {
+			snps,dcb-algorithm;
+			snps,map-to-dma-channel = <0x1>;
+			snps,route-ptp;
+		};
+
+		queue2 {
+			snps,avb-algorithm;
+			snps,map-to-dma-channel = <0x2>;
+			snps,route-avcp;
+		};
+
+		queue3 {
+			snps,avb-algorithm;
+			snps,map-to-dma-channel = <0x3>;
+			snps,priority = <0xc>;
+		};
+	};
+
+	mtl_tx_setup1: tx-queues-config {
+		snps,tx-queues-to-use = <4>;
+		snps,tx-sched-sp;
+
+		queue0 {
+			snps,dcb-algorithm;
+		};
+
+		queue1 {
+			snps,dcb-algorithm;
+		};
+
+		queue2 {
+			snps,avb-algorithm;
+			snps,send_slope = <0x1000>;
+			snps,idle_slope = <0x1000>;
+			snps,high_credit = <0x3e800>;
+			snps,low_credit = <0xffc18000>;
+		};
+
+		queue3 {
+			snps,avb-algorithm;
+			snps,send_slope = <0x1000>;
+			snps,idle_slope = <0x1000>;
+			snps,high_credit = <0x3e800>;
+			snps,low_credit = <0xffc18000>;
+		};
+	};
+};
+
+&i2c11 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	clock-frequency = <400000>;
+	pinctrl-0 = <&qup_i2c11_default>;
+	pinctrl-names = "default";
+
+	power-domains = <&scmi9_pd 11>, <&scmi9_dvfs 11>;
+	power-domain-names = "power", "perf";
+	status = "okay";
+};
+
+&i2c18 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	clock-frequency = <400000>;
+	pinctrl-0 = <&qup_i2c18_default>;
+	pinctrl-names = "default";
+
+	power-domains = <&scmi9_pd 18>, <&scmi9_dvfs 18>;
+	power-domain-names = "power", "perf";
+	status = "okay";
+};
+
+&i2c14 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 14>, <&scmi9_dvfs 14>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c15 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 15>, <&scmi9_dvfs 15>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c16 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 16>, <&scmi9_dvfs 16>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c17 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 17>, <&scmi9_dvfs 17>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c19 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 19>, <&scmi9_dvfs 19>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c20 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 20>, <&scmi9_dvfs 20>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c0 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+	/delete-property/ power-domains;
+
+	power-domains = <&scmi9_pd 0>, <&scmi9_dvfs 0>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c1 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 1>, <&scmi9_dvfs 1>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c2 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 2>, <&scmi9_dvfs 2>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c3 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 3>, <&scmi9_dvfs 3>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c4 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 4>, <&scmi9_dvfs 4>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c5 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 5>, <&scmi9_dvfs 5>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c7 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 7>, <&scmi9_dvfs 7>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c8 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 8>, <&scmi9_dvfs 8>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c9 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 9>, <&scmi9_dvfs 9>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c10 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 10>, <&scmi9_dvfs 10>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c12 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 12>, <&scmi9_dvfs 12>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c13 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 13>, <&scmi9_dvfs 13>;
+	power-domain-names = "power", "perf";
+};
+
+&i2c21 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi9_pd 21>, <&scmi9_dvfs 21>;
+	power-domain-names = "power", "perf";
+};
+
+&qupv3_id_0 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	qcom,firmware-managed-resources;
+
+	status = "okay";
+
+	uart4: serial@990000 {
+		compatible = "qcom,geni-uart";
+		reg = <0x0 0x990000 0x0 0x4000>;
+		interrupts = <GIC_SPI 531 IRQ_TYPE_LEVEL_HIGH>;
+		pinctrl-0 = <&qup_uart4_default>;
+		pinctrl-names = "default";
+		power-domains = <&scmi11_pd 4>, <&scmi11_dvfs 4>;
+		power-domain-names = "power", "perf";
+		status = "okay";
+	};
+};
+
+&qupv3_id_1 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	qcom,firmware-managed-resources;
+
+	status = "okay";
+};
+
+&qupv3_id_2 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	qcom,firmware-managed-resources;
+
+	status = "okay";
+};
+
+&qupv3_id_3 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	qcom,firmware-managed-resources;
+};
+
+&sleep_clk {
+	clock-frequency = <32764>;
+};
+
+&spi16 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	pinctrl-0 = <&qup_spi16_default>;
+	pinctrl-names = "default";
+	power-domains = <&scmi10_pd 16>, <&scmi10_dvfs 16>;
+	power-domain-names = "power", "perf";
+	status = "okay";
+};
+
+&spi14 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 14>, <&scmi10_dvfs 14>;
+	power-domain-names = "power", "perf";
+};
+
+&spi15 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 15>, <&scmi10_dvfs 15>;
+	power-domain-names = "power", "perf";
+};
+
+&spi17 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 17>, <&scmi10_dvfs 17>;
+	power-domain-names = "power", "perf";
+};
+
+&spi18 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 18>, <&scmi10_dvfs 18>;
+	power-domain-names = "power", "perf";
+};
+
+&spi19 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 19>, <&scmi10_dvfs 19>;
+	power-domain-names = "power", "perf";
+};
+
+&spi20 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 20>, <&scmi10_dvfs 20>;
+	power-domain-names = "power", "perf";
+};
+
+&spi0 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 0>, <&scmi10_dvfs 0>;
+	power-domain-names = "power", "perf";
+};
+
+&spi1 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 1>, <&scmi10_dvfs 1>;
+	power-domain-names = "power", "perf";
+};
+
+&spi2 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 2>, <&scmi10_dvfs 2>;
+	power-domain-names = "power", "perf";
+};
+
+&spi3 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 3>, <&scmi10_dvfs 3>;
+	power-domain-names = "power", "perf";
+};
+
+&spi4 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 4>, <&scmi10_dvfs 4>;
+	power-domain-names = "power", "perf";
+};
+
+&spi5 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 5>, <&scmi10_dvfs 5>;
+	power-domain-names = "power", "perf";
+};
+
+&spi7 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 7>, <&scmi10_dvfs 7>;
+	power-domain-names = "power", "perf";
+};
+
+&spi8 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 8>, <&scmi10_dvfs 8>;
+	power-domain-names = "power", "perf";
+};
+
+&spi9 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 9>, <&scmi10_dvfs 9>;
+	power-domain-names = "power", "perf";
+};
+
+&spi10 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 10>, <&scmi10_dvfs 10>;
+	power-domain-names = "power", "perf";
+};
+
+&spi11 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 11>, <&scmi10_dvfs 11>;
+	power-domain-names = "power", "perf";
+};
+
+&spi12 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 12>, <&scmi10_dvfs 12>;
+	power-domain-names = "power", "perf";
+};
+
+&spi21 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi10_pd 21>, <&scmi10_dvfs 21>;
+	power-domain-names = "power", "perf";
+};
+
+&tlmm {
+	ethernet0_default: ethernet0-default-state {
+		ethernet0_mdc: ethernet0-mdc-pins {
+			pins = "gpio8";
+			function = "emac0_mdc";
+			drive-strength = <16>;
+			bias-pull-up;
+		};
+
+		ethernet0_mdio: ethernet0-mdio-pins {
+			pins = "gpio9";
+			function = "emac0_mdio";
+			drive-strength = <16>;
+			bias-pull-up;
+		};
+	};
+
+	qup_uart4_default: qup-uart4-state {
+		pins = "gpio34", "gpio35";
+		function = "qup0_se4";
+		bias-disable;
+	};
+
+	qup_uart10_default: qup-uart10-state {
+		pins = "gpio46", "gpio47";
+		function = "qup1_se3";
+	};
+
+	qup_spi16_default: qup-spi16-state {
+		pins = "gpio86", "gpio87", "gpio88", "gpio89";
+		function = "qup2_se2";
+		drive-strength = <6>;
+		bias-disable;
+	};
+
+	qup_i2c11_default: qup-i2c11-state {
+		pins = "gpio48", "gpio49";
+		function = "qup1_se4";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	qup_i2c18_default: qup-i2c18-state {
+		pins = "gpio95", "gpio96";
+		function = "qup2_se4";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	qup_uart12_default: qup-uart12-state {
+		qup_uart12_cts: qup-uart12-cts-pins {
+			pins = "gpio52";
+			function = "qup1_se5";
+			bias-disable;
+		};
+
+		qup_uart12_rts: qup-uart12-rts-pins {
+			pins = "gpio53";
+			function = "qup1_se5";
+			bias-pull-down;
+		};
+
+		qup_uart12_tx: qup-uart12-tx-pins {
+			pins = "gpio54";
+			function = "qup1_se5";
+			bias-pull-up;
+		};
+
+		qup_uart12_rx: qup-uart12-rx-pins {
+			pins = "gpio55";
+			function = "qup1_se5";
+			bias-pull-down;
+		};
+	};
+
+	qup_uart17_default: qup-uart17-state {
+		qup_uart17_cts: qup-uart17-cts-pins {
+			pins = "gpio91";
+			function = "qup2_se3";
+			bias-disable;
+		};
+
+		qup_uart17_rts: qup0-uart17-rts-pins {
+			pins = "gpio92";
+			function = "qup2_se3";
+			bias-pull-down;
+		};
+
+		qup_uart17_tx: qup0-uart17-tx-pins {
+			pins = "gpio93";
+			function = "qup2_se3";
+			bias-pull-up;
+		};
+
+		qup_uart17_rx: qup0-uart17-rx-pins {
+			pins = "gpio94";
+			function = "qup2_se3";
+			bias-pull-down;
+		};
+	};
+};
+
+&pcie0 {
+	/delete-property/ reg-names;
+	/delete-property/ num-lanes;
+	/delete-property/ interrupt-names;
+	/delete-property/ #interrupt-cells;
+	/delete-property/ interrupt-map-mask;
+	/delete-property/ interrupt-map;
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ assigned-clocks;
+	/delete-property/ assigned-clock-rates;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+	/delete-property/ resets;
+	/delete-property/ reset-names;
+	/delete-property/ phys;
+	/delete-property/ phy-names;
+
+	compatible = "qcom,pcie-ecam-rc";
+	reg = <0x4 0x00000000 0 0x10000000>;
+	ranges = <0x01000000 0x0 0x40000000 0x0 0x40000000 0x0 0x100000>,
+		 <0x02000000 0x0 0x40100000 0x0 0x40100000 0x0 0x1ff00000>,
+		 <0x43000000 0x4 0x10100000 0x4 0x10100000 0x0 0x100000>;
+	interrupt-parent = <&intc>;
+	power-domains = <&scmi5_pd 0>;
+	power-domain-names = "power";
+	status = "okay";
+};
+
+&pcie1 {
+	/delete-property/ reg-names;
+	/delete-property/ num-lanes;
+	/delete-property/ interrupt-names;
+	/delete-property/ #interrupt-cells;
+	/delete-property/ interrupt-map-mask;
+	/delete-property/ interrupt-map;
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ assigned-clocks;
+	/delete-property/ assigned-clock-rates;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+	/delete-property/ resets;
+	/delete-property/ reset-names;
+	/delete-property/ phys;
+	/delete-property/ phy-names;
+
+	compatible = "qcom,pcie-ecam-rc";
+	reg = <0x6 0x00000000 0 0x10000000>;
+	ranges = <0x01000000 0x0 0x60000000 0x0 0x60000000 0x0 0x100000>,
+		 <0x02000000 0x0 0x60100000 0x0 0x60100000 0x0 0x1ff00000>,
+		 <0x43000000 0x6 0x10100000 0x6 0x10100000 0x0 0x100000>;
+	power-domains = <&scmi6_pd 0>;
+	power-domain-names = "power";
+	interrupt-parent = <&intc>;
+	status = "okay";
+};
+
+&uart10 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+	/delete-property/ operating-points-v2;
+
+	compatible = "qcom,geni-debug-uart";
+	pinctrl-0 = <&qup_uart10_default>;
+	pinctrl-names = "default";
+	power-domains = <&scmi11_pd 10>, <&scmi11_dvfs 10>;
+	power-domain-names = "power", "perf";
+	status = "okay";
+};
+
+&uart12 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	pinctrl-0 = <&qup_uart12_default>;
+	pinctrl-names = "default";
+	power-domains = <&scmi11_pd 12>, <&scmi11_dvfs 12>;
+	power-domain-names = "power", "perf";
+};
+
+&uart17 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	pinctrl-0 = <&qup_uart17_default>;
+	pinctrl-names = "default";
+	power-domains = <&scmi11_pd 17>, <&scmi11_dvfs 17>;
+	power-domain-names = "power", "perf";
+};
+
+&uart5 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi11_pd 5>, <&scmi11_dvfs 5>;
+	power-domain-names = "power", "perf";
+};
+
+&uart9 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi11_pd 9>, <&scmi11_dvfs 9>;
+	power-domain-names = "power", "perf";
+};
+
+&ufs_mem_hc {
+	/delete-property/ phys;
+	/delete-property/ phy-names;
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ resets;
+	/delete-property/ reset-names;
+	/delete-property/ required-opps;
+	/delete-property/ freq-table-hz;
+
+	qcom,firmware-managed-resources;
+	reset-gpios = <&tlmm 149 GPIO_ACTIVE_LOW>;
+	power-domains = <&scmi3_pd 0>;
+	power-domain-names = "power";
+
+	status = "okay";
+};
+
+&cpufreq_hw {
+	clocks = <&bi_tcxo_div2>, <&gpll0_board_clk>;
+};
+
+&usb_0 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ assigned-clocks;
+	/delete-property/ assigned-clock-rates;
+	/delete-property/ required-opps;
+	/delete-property/ resets;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi0_pd 0>, <&scmi0_pd 1>;
+	power-domain-names = "usb_transfer", "usb_core";
+	qcom,firmware-managed-resources;
+
+	status = "okay";
+};
+
+&usb_0_dwc3 {
+	dr_mode = "peripheral";
+};
+
+&usb_0_hsphy {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ resets;
+
+	power-domains = <&scmi12_pd 0>, <&scmi12_pd 1>;
+	power-domain-names = "usb_transfer", "usb_core";
+	qcom,firmware-managed-resources;
+
+	status = "okay";
+};
+
+&usb_0_qmpphy {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ resets;
+	/delete-property/ reset-names;
+	/delete-property/ #clock-cells;
+	/delete-property/ clock-output-names;
+
+	power-domains = <&scmi12_pd 2>, <&scmi12_pd 3>;
+	power-domain-names = "usb_transfer", "usb_core";
+	qcom,firmware-managed-resources;
+
+	status = "okay";
+};
+
+&usb_1 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ assigned-clocks;
+	/delete-property/ assigned-clock-rates;
+	/delete-property/ required-opps;
+	/delete-property/ resets;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi1_pd 0>, <&scmi1_pd 1>;
+	power-domain-names = "usb_transfer", "usb_core";
+	qcom,firmware-managed-resources;
+
+	status = "okay";
+};
+
+&usb_1_dwc3 {
+	dr_mode = "host";
+};
+
+&usb_1_hsphy {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ resets;
+
+	power-domains = <&scmi13_pd 0>, <&scmi13_pd 1>;
+	power-domain-names = "usb_transfer", "usb_core";
+	qcom,firmware-managed-resources;
+
+	status = "okay";
+};
+
+&usb_1_qmpphy {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ resets;
+	/delete-property/ reset-names;
+	/delete-property/ #clock-cells;
+	/delete-property/ clock-output-names;
+
+	power-domains = <&scmi13_pd 2>, <&scmi13_pd 3>;
+	power-domain-names = "usb_transfer", "usb_core";
+	qcom,firmware-managed-resources;
+
+	status = "okay";
+};
+
+&usb_2 {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ assigned-clocks;
+	/delete-property/ assigned-clock-rates;
+	/delete-property/ required-opps;
+	/delete-property/ resets;
+	/delete-property/ interconnects;
+	/delete-property/ interconnect-names;
+
+	power-domains = <&scmi2_pd 0>, <&scmi2_pd 1>;
+	power-domain-names = "usb_transfer", "usb_core";
+	qcom,firmware-managed-resources;
+
+	status = "okay";
+};
+
+&usb_2_dwc3 {
+	dr_mode = "host";
+};
+
+&usb_2_hsphy {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	/delete-property/ resets;
+
+	power-domains = <&scmi14_pd 0>, <&scmi14_pd 1>;
+	power-domain-names = "usb_transfer", "usb_core";
+	qcom,firmware-managed-resources;
+
+	status = "okay";
+};
+
+&xo_board_clk {
+	clock-frequency = <38400000>;
+};
+
+&adreno_smmu {
+	/delete-property/ clocks;
+	/delete-property/ clock-names;
+	power-domains = <&scmi15_pd 0>;
+
+	status = "okay";
+};
