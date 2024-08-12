@@ -167,6 +167,7 @@ static unsigned int phylink_interface_signal_rate(phy_interface_t interface)
 	switch (interface) {
 	case PHY_INTERFACE_MODE_SGMII:
 	case PHY_INTERFACE_MODE_1000BASEX: /* 1.25Mbd */
+	case PHY_INTERFACE_MODE_OCSGMII:
 		return 1250;
 	case PHY_INTERFACE_MODE_2500BASEX: /* 3.125Mbd */
 		return 3125;
@@ -218,6 +219,7 @@ static int phylink_interface_max_speed(phy_interface_t interface)
 		return SPEED_1000;
 
 	case PHY_INTERFACE_MODE_2500BASEX:
+	case PHY_INTERFACE_MODE_OCSGMII:
 		return SPEED_2500;
 
 	case PHY_INTERFACE_MODE_5GBASER:
@@ -500,6 +502,10 @@ unsigned long phylink_get_capabilities(phy_interface_t interface,
 	case PHY_INTERFACE_MODE_SGMII:
 	case PHY_INTERFACE_MODE_GMII:
 		caps |= MAC_1000HD | MAC_1000FD;
+		fallthrough;
+
+	case PHY_INTERFACE_MODE_OCSGMII:
+		caps |= MAC_1000HD | MAC_1000FD | MAC_2500FD;
 		fallthrough;
 
 	case PHY_INTERFACE_MODE_REVRMII:
@@ -899,6 +905,15 @@ static int phylink_parse_mode(struct phylink *pl,
 			phylink_set(pl->supported, 100baseT_Full);
 			phylink_set(pl->supported, 1000baseT_Half);
 			phylink_set(pl->supported, 1000baseT_Full);
+			break;
+		case PHY_INTERFACE_MODE_OCSGMII:
+			phylink_set(pl->supported, 10baseT_Half);
+			phylink_set(pl->supported, 10baseT_Full);
+			phylink_set(pl->supported, 100baseT_Half);
+			phylink_set(pl->supported, 100baseT_Full);
+			phylink_set(pl->supported, 1000baseT_Half);
+			phylink_set(pl->supported, 1000baseT_Full);
+			phylink_set(pl->supported, 2500baseT_Full);
 			break;
 
 		case PHY_INTERFACE_MODE_1000BASEX:
@@ -1310,7 +1325,7 @@ static void phylink_mac_initial_config(struct phylink *pl, bool force_restart)
 
 	case MLO_AN_INBAND:
 		link_state = pl->link_config;
-		if (link_state.interface == PHY_INTERFACE_MODE_SGMII)
+		if (link_state.interface == PHY_INTERFACE_MODE_SGMII || link_state.interface == PHY_INTERFACE_MODE_OCSGMII)
 			link_state.pause = MLO_PAUSE_NONE;
 		break;
 
@@ -3023,6 +3038,7 @@ static const phy_interface_t phylink_sfp_interface_preference[] = {
 	PHY_INTERFACE_MODE_5GBASER,
 	PHY_INTERFACE_MODE_2500BASEX,
 	PHY_INTERFACE_MODE_SGMII,
+	PHY_INTERFACE_MODE_OCSGMII,
 	PHY_INTERFACE_MODE_1000BASEX,
 	PHY_INTERFACE_MODE_100BASEX,
 };
@@ -3546,6 +3562,7 @@ void phylink_mii_c22_pcs_decode_state(struct phylink_link_state *state,
 		break;
 
 	case PHY_INTERFACE_MODE_SGMII:
+	case PHY_INTERFACE_MODE_OCSGMII:
 	case PHY_INTERFACE_MODE_QSGMII:
 		phylink_decode_sgmii_word(state, lpa);
 		break;
@@ -3622,6 +3639,7 @@ int phylink_mii_c22_pcs_encode_advertisement(phy_interface_t interface,
 		return adv;
 	case PHY_INTERFACE_MODE_SGMII:
 	case PHY_INTERFACE_MODE_QSGMII:
+	case PHY_INTERFACE_MODE_OCSGMII:
 		return 0x0001;
 	default:
 		/* Nothing to do for other modes */
