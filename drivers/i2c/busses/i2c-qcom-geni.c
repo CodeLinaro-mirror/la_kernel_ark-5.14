@@ -1023,6 +1023,13 @@ static int __maybe_unused geni_i2c_runtime_suspend(struct device *dev)
 
 		clk_disable_unprepare(gi2c->core_clk);
 		ret = geni_icc_disable(&gi2c->se);
+	} else {
+		ret = pm_runtime_put_sync(gi2c->se.pwr_dev);
+		if (ret) {
+			enable_irq(gi2c->irq);
+			dev_err(dev, "failed to switch resource, ret=%d\n", ret);
+			return ret;
+		}
 	}
 
 	gi2c->suspended = 1;
@@ -1046,7 +1053,14 @@ static int __maybe_unused geni_i2c_runtime_resume(struct device *dev)
 		ret = geni_se_resources_on(&gi2c->se);
 		if (ret)
 			return ret;
+	} else {
+		ret = pm_runtime_resume_and_get(gi2c->se.pwr_dev);
+		if (ret) {
+			dev_err(dev, "failed to switch resource, ret=%d\n", ret);
+			return ret;
+		}
 	}
+
 	enable_irq(gi2c->irq);
 	gi2c->suspended = 0;
 	return 0;
