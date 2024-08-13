@@ -269,6 +269,7 @@ struct plat_stmmacenet_data {
 	int (*crosststamp)(ktime_t *device, struct system_counterval_t *system,
 			   void *ctx);
 	void (*dump_debug_regs)(void *priv);
+	void (*serdes_loopback)(struct plat_stmmacenet_data *plat, bool on);
 	void *bsp_priv;
 	struct clk *stmmac_clk;
 	struct clk *pclk;

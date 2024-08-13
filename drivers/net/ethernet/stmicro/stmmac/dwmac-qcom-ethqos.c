@@ -741,6 +741,39 @@ static int ethqos_configure(struct qcom_ethqos *ethqos)
 	return ethqos->configure_func(ethqos);
 }
 
+static void ethqos_speed_mode_2500(struct net_device *ndev, void *intel_data)
+{
+	struct stmmac_priv *priv = netdev_priv(ndev);
+
+	/* Determine the link speed mode: 2.5Gbps/1Gbps */
+
+	priv->plat->max_speed = 2500;
+	priv->plat->phy_interface = PHY_INTERFACE_MODE_OCSGMII;
+}
+
+#define EMAC_WRAPPER_SGMII_PHY_CNTRL0_v3	0xF0
+#define EMAC_WRAPPER_SGMII_PHY_CNTRL1_v3	0xF4
+/* EMAC_WRAPPER_SGMII_PHY_CNTRL0 fields */
+#define SGMII_PHY_CNTRL0_2P5G_1G_CLK_SEL	GENMASK(6, 5)
+
+/* EMAC_WRAPPER_SGMII_PHY_CNTRL1 fields */
+#define SGMII_PHY_CNTRL1_RGMII_SGMII_CLK_MUX_SEL		BIT(0)
+#define SGMII_PHY_CNTRL1_USXGMII_GMII_MASTER_CLK_MUX_SEL	BIT(4)
+#define SGMII_PHY_CNTRL1_SGMII_TX_TO_RX_LOOPBACK_EN		BIT(3)
+
+void qcom_serdes_loopback_v3_1(struct plat_stmmacenet_data *plat, bool on)
+{
+	struct qcom_ethqos *ethqos = plat->bsp_priv;
+
+	if (on)
+		rgmii_updatel(ethqos, SGMII_PHY_CNTRL1_SGMII_TX_TO_RX_LOOPBACK_EN,
+			      SGMII_PHY_CNTRL1_SGMII_TX_TO_RX_LOOPBACK_EN,
+			      EMAC_WRAPPER_SGMII_PHY_CNTRL1_v3);
+	else
+		rgmii_updatel(ethqos, SGMII_PHY_CNTRL1_SGMII_TX_TO_RX_LOOPBACK_EN, 0,
+			      EMAC_WRAPPER_SGMII_PHY_CNTRL1_v3);
+}
+
 static void ethqos_fix_mac_speed(void *priv, unsigned int speed, unsigned int mode)
 {
 	struct qcom_ethqos *ethqos = priv;
@@ -1014,6 +1047,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	else
 		plat_dat->ptp_clk_freq_config = ethqos_ptp_clk_freq_config;
 	plat_dat->has_gmac4 = 1;
+	plat_dat->serdes_loopback = qcom_serdes_loopback_v3_1;
 	if (ethqos->has_emac_ge_3)
 		plat_dat->dwmac4_addrs = &data->dwmac4_addrs;
 	plat_dat->pmt = 1;
@@ -1028,6 +1062,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		plat_dat->serdes_powerup = qcom_ethqos_serdes_powerup;
 		plat_dat->serdes_powerdown  = qcom_ethqos_serdes_powerdown;
 	}
+	plat_dat->speed_mode_2500 = ethqos_speed_mode_2500;
 
 	ret = stmmac_dvr_probe(dev, plat_dat, &stmmac_res);
 	if (ret)
