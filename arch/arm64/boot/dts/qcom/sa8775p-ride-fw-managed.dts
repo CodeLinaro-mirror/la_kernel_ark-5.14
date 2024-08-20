@@ -169,7 +169,6 @@
 
 	power-domains = <&scmi7_pd 0>, <&scmi7_pd 1>,<&scmi7_dvfs 0>;
 	power-domain-names = "power_core", "power_mdio","perf_serdes";
-	firmware-managed-resources;
 
 	phy-mode = "sgmii";
 	phy-handle = <&sgmii_phy0>;
@@ -277,7 +276,6 @@
 
 	power-domains = <&scmi8_pd 0>, <&scmi8_pd 1>,<&scmi8_dvfs 0>;
 	power-domain-names = "power_core", "power_mdio","perf_serdes";
-	firmware-managed-resources;
 
 	phy-mode = "sgmii";
 	phy-handle = <&sgmii_phy1>;
