@@ -593,9 +593,6 @@ stmmac_probe_config_dt(struct platform_device *pdev, u8 *mac)
 		return ERR_PTR(rc);
 	}
 
-	if (of_property_read_bool(np, "firmware-managed-resources"))
-		return plat;
-
 	/* clock setup */
 	if (!of_device_is_compatible(np, "snps,dwc-qos-ethernet-4.10")) {
 		plat->stmmac_clk = devm_clk_get(&pdev->dev,

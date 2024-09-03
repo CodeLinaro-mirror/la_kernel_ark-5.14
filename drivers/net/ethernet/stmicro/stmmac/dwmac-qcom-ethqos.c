@@ -810,8 +810,15 @@ static void qcom_ethqos_serdes_powerdown(struct net_device *ndev, void *priv)
 static int qcom_ethqos_serdes_up(struct net_device *ndev, void *priv)
 {
 	struct qcom_ethqos *ethqos = priv;
+	int ret = 0;
 
-	return qcom_ethqos_serdes_set_level(ethqos);
+	ret = qcom_ethqos_domain_on(ethqos, PERF_SERDES);
+	if (ret < 0)
+		return ret;
+
+	ret = qcom_ethqos_serdes_set_level(ethqos);
+
+	return ret;
 }
 
 static void qcom_ethqos_serdes_down(struct net_device *ndev, void *priv)
