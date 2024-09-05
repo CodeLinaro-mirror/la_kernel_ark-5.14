@@ -880,15 +880,90 @@ static void qcom_ethqos_exit(struct platform_device *pdev, void *prv)
 	struct stmmac_priv *priv = netdev_priv(ndev);
 	struct qcom_ethqos *ethqos = prv;
 
-	/* pm runtime is disabled on driver remove.
+	/* pm_runtime_disable is called on driver remove.
+	 * And not called on Suspend/resume.
 	 */
 	if (!pm_runtime_enabled(priv->device)) {
 		pm_runtime_enable(priv->device);
 		qcom_ethqos_domain_transition_d0d3(prv, false);
 		pm_runtime_disable(priv->device);
                 dev_pm_domain_detach_list(ethqos->pd_list);
+	} else {
+		if (netif_running(ndev)) {
+			disable_irq(ndev->irq);
+			rtnl_lock();
+			phylink_disconnect_phy(priv->phylink);
+			rtnl_unlock();
+			netif_carrier_off(ndev);
+		}
+		qcom_ethqos_domain_transition_d0d3(prv, false);
+	}
+}
+
+static int qcom_ethqos_init_phy(struct net_device *ndev)
+{
+	struct stmmac_priv *priv = netdev_priv(ndev);
+	struct fwnode_handle *fwnode;
+	int ret;
+
+	fwnode = of_fwnode_handle(priv->plat->phylink_node);
+	if (!fwnode)
+		fwnode = dev_fwnode(priv->device);
+
+	if (fwnode)
+		ret = phylink_fwnode_phy_connect(priv->phylink, fwnode, 0);
+
+	/* Some DT bindings do not set-up the PHY handle. Let's try to
+	 * manually parse it
+	 */
+	if (!fwnode || ret) {
+		int addr = priv->plat->phy_addr;
+		struct phy_device *phydev;
+
+		phydev = mdiobus_get_phy(priv->mii, addr);
+		if (!phydev) {
+			netdev_err(priv->dev, "no phy at addr %d\n", addr);
+			return -ENODEV;
+		}
+
+		ret = phylink_connect_phy(priv->phylink, phydev);
 	}
 
+	if (!priv->plat->pmt) {
+		struct ethtool_wolinfo wol = { .cmd = ETHTOOL_GWOL };
+		rtnl_lock();
+		phylink_ethtool_get_wol(priv->phylink, &wol);
+		rtnl_unlock();
+		device_set_wakeup_capable(priv->device, !!wol.supported);
+	}
+	return ret;
+}
+
+static int qcom_ethqos_init(struct platform_device *pdev, void *prv)
+{
+	struct net_device *ndev = platform_get_drvdata(pdev);
+	struct stmmac_priv *priv = netdev_priv(ndev);
+	int mode = priv->plat->phy_interface;
+	int ret;
+
+	qcom_ethqos_domain_transition_d0d3(prv, true);
+	ethqos_set_func_clk_en(priv->plat->bsp_priv);
+
+	if (netif_running(ndev)) {
+		if (priv->hw->pcs != STMMAC_PCS_TBI &&
+		    priv->hw->pcs != STMMAC_PCS_RTBI &&
+		    (!priv->hw->xpcs ||
+		    xpcs_get_an_mode(priv->hw->xpcs, mode) != DW_AN_C73)) {
+			ret = qcom_ethqos_init_phy(ndev);
+			if (ret) {
+				netdev_err(priv->dev,
+					   "%s: Cannot attach to PHY (error: %d)\n",
+					   __func__, ret);
+			}
+		}
+		enable_irq(ndev->irq);
+	}
+	return ret;
 }
 
 static int ethqos_clks_config(void *priv, bool enabled)
@@ -1000,6 +1075,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		plat_dat->serdes_powerup = qcom_ethqos_serdes_up;
 		plat_dat->serdes_powerdown = qcom_ethqos_serdes_down;
 		plat_dat->exit = qcom_ethqos_exit;
+		plat_dat->init = qcom_ethqos_init;
 
 		qcom_ethqos_domain_transition_d0d3(ethqos, true);
 		qcom_ethqos_domain_on(ethqos, PERF_SERDES);
