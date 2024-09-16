@@ -58,6 +58,7 @@
 #define PARF_DEBUG_CNT_AUX_CLK_IN_L1SUB_L2	0xc88
 #define PARF_DEVICE_TYPE			0x1000
 #define PARF_BDF_TO_SID_CFG			0x2c00
+#define PARF_INT_ALL_5_MASK			0x2dcc
 
 /* PARF_INT_ALL_{STATUS/CLEAR/MASK} register fields */
 #define PARF_INT_ALL_LINK_DOWN			BIT(1)
@@ -145,6 +146,9 @@
 #define GEN3_EQ_FMDC_MAX_PRE_CUSROR_DELTA_SHIFT		10
 #define GEN3_EQ_FMDC_MAX_POST_CUSROR_DELTA_SHIFT	14
 
+/* PARF_INT_ALL_5_MASK fields */
+#define PARF_INT_ALL_5_MHI_RAM_DATA_PARITY_ERR	BIT(0)
+
 /* ELBI registers */
 #define ELBI_SYS_STTS				0x08
 
@@ -175,6 +179,7 @@ enum qcom_pcie_ep_link_status {
 
 struct qcom_pcie_ep_cfg {
 	bool no_snoop_overide;
+	bool disable_mhi_ram_parity_check;
 };
 
 /**
@@ -527,6 +532,12 @@ static int qcom_pcie_perst_deassert(struct dw_pcie *pci)
 	      PARF_INT_ALL_LINK_UP | PARF_INT_ALL_EDMA;
 	writel_relaxed(val, pcie_ep->parf + PARF_INT_ALL_MASK);
 
+	if (pcie_ep->cfg && pcie_ep->cfg->disable_mhi_ram_parity_check) {
+		val = readl_relaxed(pcie_ep->parf + PARF_INT_ALL_5_MASK);
+		val &= ~PARF_INT_ALL_5_MHI_RAM_DATA_PARITY_ERR;
+		writel_relaxed(val, pcie_ep->parf + PARF_INT_ALL_5_MASK);
+	}
+
 	ret = dw_pcie_ep_init_complete(&pcie_ep->pci.ep);
 	if (ret) {
 		dev_err(dev, "Failed to complete initialization: %d\n", ret);
@@ -587,6 +598,7 @@ static void qcom_pcie_perst_assert(struct dw_pcie *pci)
 
 static const struct qcom_pcie_ep_cfg cfg_1_34_0 = {
 	.no_snoop_overide = true,
+	.disable_mhi_ram_parity_check = true,
 };
 
 /* Common DWC controller ops */
