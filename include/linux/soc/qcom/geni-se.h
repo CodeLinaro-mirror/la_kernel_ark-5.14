@@ -54,6 +54,7 @@ struct geni_icc_path {
 	unsigned int avg_bw;
 };
 
+#define DOMAIN_IDX_POWER	0
 #define DOMAIN_IDX_PERF		1
 
 /**
@@ -76,6 +77,7 @@ struct geni_se {
 	struct geni_icc_path icc_paths[3];
 	struct dev_pm_domain_list *pd_list;
 	struct device *perf_dev;
+	struct device *pwr_dev;
 	unsigned int cur_perf_lvl;
 	bool is_fw_managed;
 };

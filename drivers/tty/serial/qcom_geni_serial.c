@@ -1336,7 +1336,7 @@ static void qcom_geni_serial_pm(struct uart_port *uport,
 
 	if (new_state == UART_PM_STATE_ON && old_state == UART_PM_STATE_OFF) {
 		if (port->se.is_fw_managed) {
-			pm_runtime_get_sync(port->se.dev);
+			pm_runtime_resume_and_get(port->se.pwr_dev);
 		} else {
 			geni_icc_enable(&port->se);
 			geni_se_resources_on(&port->se);
@@ -1345,7 +1345,7 @@ static void qcom_geni_serial_pm(struct uart_port *uport,
 			old_state == UART_PM_STATE_ON) {
 		if (port->se.is_fw_managed) {
 			port->se.cur_perf_lvl = 0;
-			pm_runtime_put_sync(port->se.dev);
+			pm_runtime_put_sync(port->se.pwr_dev);
 		} else {
 			geni_se_resources_off(&port->se);
 			geni_icc_disable(&port->se);
@@ -1436,11 +1436,6 @@ static int qcom_geni_serial_probe(struct platform_device *pdev)
 		ret = geni_se_domain_attach(dev, &port->se);
 		if (ret <= 0)
 			return ret;
-
-		if (!console) {
-			pm_runtime_set_suspended(port->se.dev);
-			pm_runtime_enable(port->se.dev);
-		}
 	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);

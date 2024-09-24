@@ -1226,6 +1226,11 @@ static int __maybe_unused spi_geni_runtime_suspend(struct device *dev)
 		ret = geni_icc_disable(&mas->se);
 	} else {
 		mas->se.cur_perf_lvl = 0;
+		ret = pm_runtime_put_sync(mas->se.pwr_dev);
+		if (ret) {
+			dev_err(dev, "failed to switch resource, ret=%d\n", ret);
+			return ret;
+		}
 	}
 	return ret;
 }
@@ -1246,7 +1251,14 @@ static int __maybe_unused spi_geni_runtime_resume(struct device *dev)
 			return ret;
 
 		ret = dev_pm_opp_set_rate(mas->dev, mas->cur_sclk_hz);
+	} else {
+		ret = pm_runtime_resume_and_get(mas->se.pwr_dev);
+		if (ret) {
+			dev_err(dev, "failed to switch resource, ret=%d\n", ret);
+			return ret;
+		}
 	}
+
 	return ret;
 }
 
