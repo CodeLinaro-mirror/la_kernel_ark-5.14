@@ -2552,6 +2552,12 @@ BuildKernel() {
     sed -e 's/^lib*/\/lib/' %{?zipsed} $RPM_BUILD_ROOT/modules.list >> ../%{name}${Variant:+-${Variant}}-modules-core.list
     sed -e 's/^lib*/\/lib/' %{?zipsed} $RPM_BUILD_ROOT/mod-extra.list >> ../%{name}${Variant:+-${Variant}}-modules-extra.list
 
+    MODLIST_DIR=$(pwd)/..
+
+    pushd $RPM_BUILD_ROOT
+    find etc/modprobe.d/ | grep blacklist.conf | xargs -i{} echo "%config(noreplace) /{}" >> $MODLIST_DIR/%{name}${Variant:+-${Variant}}-modules-extra.list
+    popd
+
     # Cleanup
     rm -f $RPM_BUILD_ROOT/k-d.list
     rm -f $RPM_BUILD_ROOT/modules.list
@@ -3703,7 +3709,6 @@ fi
 /usr/src/kernels/%{KVERREL}%{?3:+%{3}}\
 %{expand:%%files %{?3:%{3}-}devel-matched}\
 %{expand:%%files -f %{name}-%{?3:%{3}-}modules-extra.list %{?3:%{3}-}modules-extra}\
-%config(noreplace) /etc/modprobe.d/*-blacklist.conf\
 %{expand:%%files %{?3:%{3}-}modules-internal}\
 /lib/modules/%{KVERREL}%{?3:+%{3}}/internal\
 %if 0%{!?fedora:1}\
