@@ -1,3 +1,11 @@
+* Mon Mar 24 2025 Scott Weaver <scweaver@redhat.com> [5.14.0-570.518.8.1.8.el9_6iv]
+- redhat/configs: automotive: set CONFIG_TIMEOUT_PANIC (Enric Balletbo i Serra) [RHEL-84453]
+- net: stmmac: dwmac-tegra: Read iommu stream id from device tree (Izabela Bakollari) [RHEL-75649] {CVE-2025-21663}
+- net: stmmac: Fix zero-division error when disabling tc cbs (Izabela Bakollari) [RHEL-63931] {CVE-2024-49977}
+- configs: enable FW_CACHE on centos-stream/rhel 9 for nouveau (Dave Airlie) [RHEL-79929]
+- arm64: cacheinfo: Avoid out-of-bounds write to cacheinfo array (Radu Rendec) [RHEL-80224]
+Resolves: RHEL-84453
+
 * Fri Mar 21 2025 Scott Weaver <scweaver@redhat.com> [5.14.0-570.518.7.1.7.el9_6iv]
 - gfs2: skip if we cannot defer delete (Andreas Gruenbacher) [RHEL-77720]
 - gfs2: remove redundant warnings (Andreas Gruenbacher) [RHEL-77720]
