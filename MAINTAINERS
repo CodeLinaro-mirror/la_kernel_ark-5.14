@@ -19861,6 +19861,15 @@ F:	drivers/staging/unisys/
 F:	drivers/visorbus/
 F:	include/linux/visorbus.h
 
+UNION-FIND
+M:	Xavier <xavier_qy@163.com>
+L:	linux-kernel@vger.kernel.org
+S:	Maintained
+F:	Documentation/core-api/union_find.rst
+F:	Documentation/translations/zh_CN/core-api/union_find.rst
+F:	include/linux/union_find.h
+F:	lib/union_find.c
+
 UNIVERSAL FLASH STORAGE HOST CONTROLLER DRIVER
 R:	Alim Akhtar <alim.akhtar@samsung.com>
 R:	Avri Altman <avri.altman@wdc.com>
@@ -20195,10 +20204,16 @@ S:	Maintained
 F:	drivers/usb/typec/mux/pi3usb30532.c
 
 USB TYPEC PORT CONTROLLER DRIVERS
-M:	Guenter Roeck <linux@roeck-us.net>
+L:	linux-usb@vger.kernel.org
+S:	Orphan
+F:	drivers/usb/typec/tcpm/
+
+USB TYPEC TUSB1046 MUX DRIVER
+M:	Romain Gantois <romain.gantois@bootlin.com>
 L:	linux-usb@vger.kernel.org
 S:	Maintained
-F:	drivers/usb/typec/tcpm/
+F:	Documentation/devicetree/bindings/usb/ti,tusb1046.yaml
+F:	drivers/usb/typec/mux/tusb1046.c
 
 USB UHCI DRIVER
 M:	Alan Stern <stern@rowland.harvard.edu>
