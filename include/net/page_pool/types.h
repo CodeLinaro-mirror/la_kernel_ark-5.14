@@ -6,6 +6,7 @@
 #include <linux/dma-direction.h>
 #include <linux/ptr_ring.h>
 #include <linux/types.h>
+#include <linux/xarray.h>
 
 #include <linux/rh_kabi.h>
 
@@ -23,6 +24,9 @@
 #define PP_FLAG_SYSTEM_POOL	BIT(2) /* Global system page_pool */
 #define PP_FLAG_ALL		(PP_FLAG_DMA_MAP | PP_FLAG_DMA_SYNC_DEV | \
 				 PP_FLAG_SYSTEM_POOL)
+
+/* Index limit to stay within PP_DMA_INDEX_BITS for DMA indices */
+#define PP_DMA_INDEX_LIMIT XA_LIMIT(1, BIT(PP_DMA_INDEX_BITS) - 1)
 
 /*
  * Fast allocation side cache array/stack
@@ -206,6 +210,8 @@ struct page_pool {
 	 */
 	struct ptr_ring ring;
 
+	struct xarray dma_mapped;
+
 #ifdef CONFIG_PAGE_POOL_STATS
 	/* recycle stats are per-cpu to avoid locking */
 	struct page_pool_recycle_stats __percpu *recycle_stats;
@@ -226,7 +232,6 @@ struct page_pool {
 	struct {
 		struct hlist_node list;
 		u64 detach_time;
-		u32 napi_id;
 		u32 id;
 	} user;
 };
