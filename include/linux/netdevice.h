@@ -3205,6 +3205,8 @@ static inline struct net_device *first_net_device_rcu(struct net *net)
 }
 
 int netdev_boot_setup_check(struct net_device *dev);
+struct net_device *dev_getbyhwaddr(struct net *net, unsigned short type,
+				   const char *hwaddr);
 struct net_device *dev_getbyhwaddr_rcu(struct net *net, unsigned short type,
 				       const char *hwaddr);
 struct net_device *dev_getfirstbyhwtype(struct net *net, unsigned short type);
@@ -4189,7 +4191,17 @@ static __always_inline int ____dev_forward_skb(struct net_device *dev,
 	return 0;
 }
 
-bool dev_nit_active(struct net_device *dev);
+bool dev_nit_active_rcu(const struct net_device *dev);
+static inline bool dev_nit_active(const struct net_device *dev)
+{
+	bool ret;
+
+	rcu_read_lock();
+	ret = dev_nit_active_rcu(dev);
+	rcu_read_unlock();
+	return ret;
+}
+
 void dev_queue_xmit_nit(struct sk_buff *skb, struct net_device *dev);
 
 static inline void __dev_put(struct net_device *dev)
