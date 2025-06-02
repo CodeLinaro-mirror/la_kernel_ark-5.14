@@ -41,7 +41,7 @@ ZSTREAM ?= no
 #
 # Use this spot to avoid future merge conflicts.
 # Do not trim this comment.
-AUTOMOTIVEBUILD:=.536
+AUTOMOTIVEBUILD:=.537
 AUTOMOTIVE_RELEASE:=.0
 
 #
