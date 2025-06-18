@@ -1630,6 +1630,14 @@ struct net_device_ops {
 						    struct kernel_hwtstamp_config *kernel_config,
 						    struct netlink_ext_ack *extack);
 
+#if IS_ENABLED(CONFIG_NET_SHAPER)
+	/**
+	 * @net_shaper_ops: Device shaping offload operations
+	 * see include/net/net_shapers.h
+	 */
+	const struct net_shaper_ops *net_shaper_ops;
+#endif
+
 	RH_KABI_RESERVE(1)
 	RH_KABI_RESERVE(2)
 	RH_KABI_RESERVE(3)
@@ -2062,7 +2070,7 @@ enum netdev_reg_state {
  *			regardless of source, even if those aren't
  *			HWTSTAMP_SOURCE_NETDEV
  *	@change_proto_down: device supports setting carrier via IFLA_PROTO_DOWN
- *	@netns_local: interface can't change network namespaces
+ *	@netns_immutable: interface can't change network namespaces
  *	@fcoe_mtu:	device supports maximum FCoE MTU, 2158 bytes
  *
  *	@net_notifier_list:	List of per-net netdev notifier block
@@ -2466,7 +2474,7 @@ struct net_device {
 	/* priv_flags_slow, ungrouped to save space */
 	unsigned long		see_all_hwtstamp_requests:1;
 	unsigned long		change_proto_down:1;
-	unsigned long		netns_local:1;
+	unsigned long		netns_immutable:1;
 	unsigned long		fcoe_mtu:1;
 
 	struct list_head	net_notifier_list;
@@ -2503,6 +2511,20 @@ struct net_device {
 	struct napi_config	*napi_config;
 	unsigned long		gro_flush_timeout;
 	u32			napi_defer_hard_irqs;
+
+	/**
+	 * @lock: protects @net_shaper_hierarchy, feel free to use for other
+	 * netdev-scope protection. Ordering: take after rtnl_lock.
+	 */
+	struct mutex		lock;
+
+#if IS_ENABLED(CONFIG_NET_SHAPER)
+	/**
+	 * @net_shaper_hierarchy: data tracking the current shaper status
+	 *  see include/net/net_shapers.h
+	 */
+	struct net_shaper_hierarchy *net_shaper_hierarchy;
+#endif
 
 	RH_KABI_RESERVE(1)
 	RH_KABI_RESERVE(2)
