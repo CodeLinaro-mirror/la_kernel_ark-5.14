@@ -384,7 +384,6 @@ struct pci_dev {
 					   can be generated */
 	unsigned int	pme_poll:1;	/* Poll device's PME status bit */
 	unsigned int	pinned:1;	/* Whether this dev is pinned */
-	unsigned int	config_rrs_sv:1; /* Config RRS software visibility */
 	unsigned int	imm_ready:1;	/* Supports Immediate Readiness */
 	unsigned int	d1_support:1;	/* Low power state D1 is supported */
 	unsigned int	d2_support:1;	/* Low power state D2 is supported */
@@ -447,6 +446,7 @@ struct pci_dev {
 	unsigned int	ats_enabled:1;		/* Address Translation Svc */
 	unsigned int	pasid_enabled:1;	/* Process Address Space ID */
 	unsigned int	pri_enabled:1;		/* Page Request Interface */
+	unsigned int	tph_enabled:1;		/* TLP Processing Hints */
 	unsigned int	is_managed:1;		/* Managed via devres */
 	unsigned int	is_msi_managed:1;	/* MSI release via devres installed */
 	unsigned int	needs_freset:1;		/* Requires fundamental reset */
@@ -546,6 +546,12 @@ struct pci_dev {
 
 	/* These methods index pci_reset_fn_methods[] */
 	u8 reset_methods[PCI_NUM_RESET_METHODS]; /* In priority order */
+
+#ifdef CONFIG_PCIE_TPH
+	u16		tph_cap;	/* TPH capability offset */
+	u8		tph_mode;	/* TPH mode */
+	u8		tph_req_type;	/* TPH requester type */
+#endif
 
 	RH_KABI_RESERVE(1)
 	RH_KABI_RESERVE(2)
