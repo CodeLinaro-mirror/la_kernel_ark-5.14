@@ -1,3 +1,9 @@
+* Mon Oct 13 2025 Scott Weaver <scweaver@redhat.com> [5.14.0-623.572.el9iv]
+- crypto: seqiv - Handle EBUSY correctly (CKI Backport Bot) [RHEL-117236] {CVE-2023-53373}
+- ice: fix Rx page leak on multi-buffer frames (Petr Oros) [RHEL-116541]
+- EDAC/amd64: Fix size calculation for Non-Power-of-Two DIMMs (Joel Savitz) [RHEL-101167]
+Resolves: RHEL-101167, RHEL-116541, RHEL-117236
+
 * Tue Oct 07 2025 Scott Weaver <scweaver@redhat.com> [5.14.0-622.571.el9iv]
 - of: reserved_mem: increase MAX_RESERVED_REGIONS to 128 (Eric Chanudet) [RHEL-117870]
 - redhat: configs: switch pinctrl_msm and pinctrl_sa8775p to modules (Eric Chanudet) [RHEL-117876]
